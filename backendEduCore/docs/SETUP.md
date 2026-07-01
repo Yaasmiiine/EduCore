@@ -55,11 +55,20 @@ php artisan serve
 ```
 
 ## Demo accounts
-| Role       | Email                    | Password     | Notes                          |
-|------------|--------------------------|---------------|--------------------------------|
-| Admin      | admin@educore.test       | password123   | Full access                    |
-| Formateur  | formateur@educore.test   | password123   | Assigned to "Développement Web"|
-| Stagiaire  | stagiaire@educore.test   | password123   | In groupe DEV101-G1            |
+All demo accounts use the password `password123`.
+
+| Role       | Email                          | Notes                              |
+|------------|---------------------------------|-------------------------------------|
+| Admin      | admin@educore.test              | Full access                        |
+| Formateur  | formateur@educore.test          | Mohammed Alami — Développement Web, Bases de Données |
+| Formateur  | formateur2@educore.test         | Nadia Bensouda — Réseaux Informatiques, Systèmes d'Exploitation |
+| Formateur  | formateur3@educore.test         | Karim Tazi — Comptabilité Générale, Management d'Entreprise |
+| Stagiaire  | stagiaire@educore.test          | Youssef Benali — groupe DEV101-G1  |
+| Stagiaire  | stagiaire2@educore.test … stagiaire8@educore.test | 7 more stagiaires spread across DEV101-G2, RS101-G1, GE101-G1 |
+
+The seeder also creates 3 filières, 4 groupes, 3 salles, 6 modules, 8 séances
+d'emploi du temps and 4 annonces so the platform has enough demo data to
+navigate around without every list being empty.
 
 `POST /api/auth/register` is for stagiaires only (must supply `groupe_id`) — admin and
 formateur accounts are created by an admin via `POST /api/users`.
