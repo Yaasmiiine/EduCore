@@ -1,67 +1,112 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import "../styles/groups.css";
 import Sidebar from "../components/Sidebar";
+import groupesApi from "../api/groupes";
+import filieresApi from "../api/filieres";
+import usersApi from "../api/users";
 
 import {
   FaSearch,
   FaPlus,
   FaUsers,
-  FaEye,
   FaEdit,
   FaTrash
 } from "react-icons/fa";
 
-const groups = [
-  {
-    id: 1,
-    code: "GI",
-    name: "Groupe Informatique 1A",
-    filiere: "Informatique",
-    niveau: "1ère Année",
-    effectif: 28,
-    responsable: "John Doe",
-    created: "12 mai 2024"
-  },
-  {
-    id: 2,
-    code: "GC",
-    name: "Groupe Commerce 2A",
-    filiere: "Commerce",
-    niveau: "2ème Année",
-    effectif: 32,
-    responsable: "Sarah Johnson",
-    created: "10 mai 2024"
-  },
-  {
-    id: 3,
-    code: "GE",
-    name: "Groupe Électronique 1A",
-    filiere: "Électronique",
-    niveau: "1ère Année",
-    effectif: 25,
-    responsable: "Michael Brown",
-    created: "8 mai 2024"
-  },
-  {
-    id: 4,
-    code: "GI2",
-    name: "Groupe Informatique 2A",
-    filiere: "Informatique",
-    niveau: "2ème Année",
-    effectif: 30,
-    responsable: "David Wilson",
-    created: "6 mai 2024"
-  }
-];
+const EMPTY_FORM = { nom: "", filiere_id: "", annee: "1" };
 
 export default function Groups() {
+  const [groupes, setGroupes] = useState([]);
+  const [filieres, setFilieres] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   const [showModal, setShowModal] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [formError, setFormError] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const [search, setSearch] = useState("");
+  const [filiereFilter, setFiliereFilter] = useState("");
+
+  const loadAll = () => {
+    setLoading(true);
+    return Promise.all([groupesApi.list(), filieresApi.list(), usersApi.list()])
+      .then(([groupesData, filieresData, usersData]) => {
+        setGroupes(groupesData);
+        setFilieres(filieresData);
+        setUsers(usersData);
+        setError("");
+      })
+      .catch(() => setError("Impossible de charger les groupes."))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    loadAll();
+  }, []);
+
+  const openCreateModal = () => {
+    setEditingId(null);
+    setForm(EMPTY_FORM);
+    setFormError("");
+    setShowModal(true);
+  };
+
+  const openEditModal = (groupe) => {
+    setEditingId(groupe.id);
+    setForm({ nom: groupe.nom, filiere_id: groupe.filiere_id, annee: String(groupe.annee) });
+    setFormError("");
+    setShowModal(true);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setFormError("");
+    setSaving(true);
+    const payload = { ...form, annee: Number(form.annee) };
+    try {
+      if (editingId) {
+        await groupesApi.update(editingId, payload);
+      } else {
+        await groupesApi.create(payload);
+      }
+      setShowModal(false);
+      await loadAll();
+    } catch (err) {
+      const errors = err.response?.data?.errors;
+      setFormError(errors ? Object.values(errors).flat().join(" ") : "Une erreur est survenue.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (groupe) => {
+    if (!window.confirm(`Supprimer le groupe "${groupe.nom}" ?`)) return;
+    try {
+      await groupesApi.remove(groupe.id);
+      setGroupes((prev) => prev.filter((g) => g.id !== groupe.id));
+    } catch {
+      setError("Impossible de supprimer ce groupe.");
+    }
+  };
+
+  const effectif = (groupeId) => users.filter((u) => u.groupe_id === groupeId).length;
+
+  const filteredGroupes = useMemo(() => {
+    return groupes.filter((g) => {
+      const matchesSearch = g.nom.toLowerCase().includes(search.toLowerCase());
+      const matchesFiliere = !filiereFilter || String(g.filiere_id) === filiereFilter;
+      return matchesSearch && matchesFiliere;
+    });
+  }, [groupes, search, filiereFilter]);
 
   return (
     <div className="dashboard">
 
-      <Sidebar role="admin" />
+      <Sidebar />
 
       <main className="groups-page">
 
@@ -78,13 +123,15 @@ export default function Groups() {
 
           <button
             className="add-group-btn"
-            onClick={() => setShowModal(true)}
+            onClick={openCreateModal}
           >
             <FaPlus />
             Ajouter un groupe
           </button>
 
         </div>
+
+        {error && <p style={{ color: "#dc2626" }}>{error}</p>}
 
         {/* TOP */}
         <div className="groups-top">
@@ -98,15 +145,17 @@ export default function Groups() {
               <input
                 type="text"
                 placeholder="Rechercher un groupe..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
               />
 
             </div>
 
-            <select>
-              <option>Filtrer par filière</option>
-              <option>Informatique</option>
-              <option>Commerce</option>
-              <option>Électronique</option>
+            <select value={filiereFilter} onChange={(e) => setFiliereFilter(e.target.value)}>
+              <option value="">Filtrer par filière</option>
+              {filieres.map((f) => (
+                <option key={f.id} value={f.id}>{f.nom}</option>
+              ))}
             </select>
 
           </div>
@@ -119,7 +168,7 @@ export default function Groups() {
 
             <div>
               <p>Total Groupes</p>
-              <h2>48</h2>
+              <h2>{groupes.length}</h2>
             </div>
 
           </div>
@@ -129,6 +178,9 @@ export default function Groups() {
         {/* TABLE */}
         <div className="table-container">
 
+          {loading ? (
+            <p style={{ padding: 24 }}>Chargement...</p>
+          ) : (
           <table>
 
             <thead>
@@ -139,8 +191,6 @@ export default function Groups() {
                 <th>Filière</th>
                 <th>Niveau</th>
                 <th>Effectif</th>
-                <th>Responsable</th>
-                <th>Créé le</th>
                 <th>Actions</th>
               </tr>
 
@@ -148,7 +198,7 @@ export default function Groups() {
 
             <tbody>
 
-              {groups.map((group) => (
+              {filteredGroupes.map((group) => (
 
                 <tr key={group.id}>
 
@@ -159,57 +209,36 @@ export default function Groups() {
                     <div className="group-name">
 
                       <div className="group-avatar">
-                        {group.code}
+                        {group.nom.slice(0, 2).toUpperCase()}
                       </div>
 
-                      {group.name}
+                      {group.nom}
 
                     </div>
 
                   </td>
 
-                  <td>{group.filiere}</td>
+                  <td>{group.filiere?.nom}</td>
 
                   <td>
                     <span className="niveau">
-                      {group.niveau}
+                      Année {group.annee}
                     </span>
                   </td>
 
                   <td>
-                    {group.effectif} étudiants
+                    {effectif(group.id)} étudiants
                   </td>
-
-                  <td>
-
-                    <div className="responsable">
-
-                      <img
-                        src={`https://i.pravatar.cc/40?img=${group.id}`}
-                        alt=""
-                      />
-
-                      {group.responsable}
-
-                    </div>
-
-                  </td>
-
-                  <td>{group.created}</td>
 
                   <td>
 
                     <div className="actions">
 
-                      <button>
-                        <FaEye />
-                      </button>
-
-                      <button>
+                      <button onClick={() => openEditModal(group)}>
                         <FaEdit />
                       </button>
 
-                      <button className="delete">
+                      <button className="delete" onClick={() => handleDelete(group)}>
                         <FaTrash />
                       </button>
 
@@ -224,25 +253,7 @@ export default function Groups() {
             </tbody>
 
           </table>
-
-          {/* PAGINATION */}
-          <div className="pagination">
-
-            <p>
-              Affichage de 1 à 8 sur 48 groupes
-            </p>
-
-            <div className="pages">
-
-              <button className="active">1</button>
-              <button>2</button>
-              <button>3</button>
-              <span>...</span>
-              <button>6</button>
-
-            </div>
-
-          </div>
+          )}
 
         </div>
 
@@ -255,7 +266,7 @@ export default function Groups() {
 
               <div className="modal-header">
 
-                <h2>Ajouter un nouveau groupe</h2>
+                <h2>{editingId ? "Modifier le groupe" : "Ajouter un nouveau groupe"}</h2>
 
                 <button
                   className="close-btn"
@@ -266,55 +277,47 @@ export default function Groups() {
 
               </div>
 
-              <form className="modal-form">
+              {formError && <p style={{ color: "#dc2626" }}>{formError}</p>}
+
+              <form className="modal-form" onSubmit={handleSubmit}>
 
                 <div className="form-group">
                   <label>Nom du groupe</label>
 
                   <input
                     type="text"
-                    placeholder="Ex: Groupe Informatique 1A"
+                    placeholder="Ex: DEV101-G1"
+                    value={form.nom}
+                    onChange={(e) => setForm({ ...form, nom: e.target.value })}
+                    required
                   />
                 </div>
 
                 <div className="form-group">
                   <label>Filière</label>
 
-                  <select>
-                    <option>Sélectionner une filière</option>
-                    <option>Informatique</option>
-                    <option>Commerce</option>
-                    <option>Électronique</option>
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label>Niveau</label>
-
-                  <select>
-                    <option>Sélectionner le niveau</option>
-                    <option>1ère Année</option>
-                    <option>2ème Année</option>
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label>Responsable</label>
-
-                  <select>
-                    <option>Sélectionner un responsable</option>
-                    <option>John Doe</option>
-                    <option>Sarah Johnson</option>
+                  <select
+                    value={form.filiere_id}
+                    onChange={(e) => setForm({ ...form, filiere_id: e.target.value })}
+                    required
+                  >
+                    <option value="">Sélectionner une filière</option>
+                    {filieres.map((f) => (
+                      <option key={f.id} value={f.id}>{f.nom}</option>
+                    ))}
                   </select>
                 </div>
 
                 <div className="form-group full">
-                  <label>Effectif</label>
+                  <label>Année</label>
 
-                  <input
-                    type="number"
-                    placeholder="Ex: 30"
-                  />
+                  <select
+                    value={form.annee}
+                    onChange={(e) => setForm({ ...form, annee: e.target.value })}
+                  >
+                    <option value="1">1ère Année</option>
+                    <option value="2">2ème Année</option>
+                  </select>
                 </div>
 
                 <div className="modal-actions">
@@ -330,8 +333,9 @@ export default function Groups() {
                   <button
                     type="submit"
                     className="submit-btn"
+                    disabled={saving}
                   >
-                    Ajouter
+                    {saving ? "Enregistrement..." : editingId ? "Enregistrer" : "Ajouter"}
                   </button>
 
                 </div>

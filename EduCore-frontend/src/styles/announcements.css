@@ -266,17 +266,17 @@ td{
   color:#6366f1;
 }
 
-.status.publiée{
-  background:#dcfce7;
-  color:#16a34a;
+.status.normale{
+  background:#eef2ff;
+  color:#6366f1;
 }
 
-.status.programmée{
+.status.importante{
   background:#ffedd5;
   color:#ea580c;
 }
 
-.status.archivées{
+.status.urgente{
   background:#fee2e2;
   color:#dc2626;
 }

@@ -1,95 +1,123 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import "../styles/announcements.css";
 
 import Sidebar from "../components/Sidebar";
+import annoncesApi from "../api/annonces";
+import groupesApi from "../api/groupes";
+import { useAuth } from "../context/AuthContext.jsx";
 
 import {
   FaBullhorn,
   FaSearch,
   FaPlus,
-  FaPaperPlane,
-  FaClock,
-  FaArchive,
-  FaEye,
+  FaExclamationTriangle,
   FaEdit,
   FaTrash,
-  FaBookOpen,
-  FaExclamationTriangle,
-  FaGraduationCap
 } from "react-icons/fa";
 
-const announcements = [
-  {
-    id: 1,
-    title: "Réunion pédagogique",
-    description: "Réunion pédagogique vendredi à 10h...",
-    audience: "Enseignants",
-    status: "Publiée",
-    date: "20 mai 2024",
-    time: "10:30",
-    author: "John Doe",
-    icon: <FaBullhorn />,
-    color: "purple"
-  },
-  {
-    id: 2,
-    title: "Nouvelle session d'examens",
-    description: "La nouvelle session débutera le 1er juin...",
-    audience: "Étudiants",
-    status: "Publiée",
-    date: "18 mai 2024",
-    time: "14:15",
-    author: "Sarah Johnson",
-    icon: <FaBookOpen />,
-    color: "blue"
-  },
-  {
-    id: 3,
-    title: "Fête de l'établissement",
-    description: "Nous avons le plaisir d'annoncer la fête...",
-    audience: "Tous",
-    status: "Programmée",
-    date: "25 mai 2024",
-    time: "09:00",
-    author: "Michael Brown",
-    icon: <FaGraduationCap />,
-    color: "green"
-  },
-  {
-    id: 4,
-    title: "Maintenance du système",
-    description: "Le système sera en maintenance dimanche...",
-    audience: "Tous",
-    status: "Publiée",
-    date: "15 mai 2024",
-    time: "16:45",
-    author: "David Wilson",
-    icon: <FaExclamationTriangle />,
-    color: "orange"
-  },
-  {
-    id: 5,
-    title: "Inscriptions ouvertes",
-    description: "Les inscriptions sont maintenant ouvertes...",
-    audience: "Étudiants",
-    status: "Archivées",
-    date: "10 mai 2024",
-    time: "11:20",
-    author: "Emily Davis",
-    icon: <FaGraduationCap />,
-    color: "pink"
-  }
-];
+const EMPTY_FORM = { titre: "", contenu: "", priorite: "normale", groupe_id: "" };
 
 export default function Announcements() {
+  const { role, user } = useAuth();
+  const canCreate = role === "admin" || role === "teacher";
+
+  const [annonces, setAnnonces] = useState([]);
+  const [groupes, setGroupes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   const [showModal, setShowModal] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [formError, setFormError] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const [search, setSearch] = useState("");
+  const [prioriteFilter, setPrioriteFilter] = useState("");
+
+  const loadAll = () => {
+    setLoading(true);
+    return Promise.all([annoncesApi.list(), groupesApi.list()])
+      .then(([annoncesData, groupesData]) => {
+        setAnnonces(annoncesData);
+        setGroupes(groupesData);
+        setError("");
+      })
+      .catch(() => setError("Impossible de charger les annonces."))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    loadAll();
+  }, []);
+
+  const canModify = (annonce) => role === "admin" || annonce.auteur_id === user?.id;
+
+  const openCreateModal = () => {
+    setEditingId(null);
+    setForm(EMPTY_FORM);
+    setFormError("");
+    setShowModal(true);
+  };
+
+  const openEditModal = (annonce) => {
+    setEditingId(annonce.id);
+    setForm({
+      titre: annonce.titre,
+      contenu: annonce.contenu,
+      priorite: annonce.priorite,
+      groupe_id: annonce.groupe_id || "",
+    });
+    setFormError("");
+    setShowModal(true);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setFormError("");
+    setSaving(true);
+    const payload = { ...form, groupe_id: form.groupe_id || null };
+    try {
+      if (editingId) {
+        await annoncesApi.update(editingId, payload);
+      } else {
+        await annoncesApi.create(payload);
+      }
+      setShowModal(false);
+      await loadAll();
+    } catch (err) {
+      const errors = err.response?.data?.errors;
+      setFormError(errors ? Object.values(errors).flat().join(" ") : "Une erreur est survenue.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (annonce) => {
+    if (!window.confirm(`Supprimer l'annonce "${annonce.titre}" ?`)) return;
+    try {
+      await annoncesApi.remove(annonce.id);
+      setAnnonces((prev) => prev.filter((a) => a.id !== annonce.id));
+    } catch {
+      setError("Impossible de supprimer cette annonce.");
+    }
+  };
+
+  const filteredAnnonces = useMemo(() => {
+    return annonces.filter((a) => {
+      const matchesSearch = a.titre.toLowerCase().includes(search.toLowerCase());
+      const matchesPriorite = !prioriteFilter || a.priorite === prioriteFilter;
+      return matchesSearch && matchesPriorite;
+    });
+  }, [annonces, search, prioriteFilter]);
+
+  const countByPriorite = (p) => annonces.filter((a) => a.priorite === p).length;
 
   return (
     <div className="dashboard">
 
-      <Sidebar role="admin" />
+      <Sidebar />
 
       <main className="announcements-page">
 
@@ -103,15 +131,19 @@ export default function Announcements() {
             </p>
           </div>
 
-          <button
-            className="add-announcement-btn"
-            onClick={() => setShowModal(true)}
-          >
-            <FaPlus />
-            Créer une annonce
-          </button>
+          {canCreate && (
+            <button
+              className="add-announcement-btn"
+              onClick={openCreateModal}
+            >
+              <FaPlus />
+              Créer une annonce
+            </button>
+          )}
 
         </div>
+
+        {error && <p style={{ color: "#dc2626" }}>{error}</p>}
 
         {/* STATS */}
         <div className="announcements-stats">
@@ -124,7 +156,7 @@ export default function Announcements() {
 
             <div>
               <p>Total annonces</p>
-              <h2>24</h2>
+              <h2>{annonces.length}</h2>
             </div>
 
           </div>
@@ -132,12 +164,12 @@ export default function Announcements() {
           <div className="stat-card">
 
             <div className="stat-icon green">
-              <FaPaperPlane />
+              <FaBullhorn />
             </div>
 
             <div>
-              <p>Annonces publiées</p>
-              <h2>18</h2>
+              <p>Priorité normale</p>
+              <h2>{countByPriorite("normale")}</h2>
             </div>
 
           </div>
@@ -145,12 +177,12 @@ export default function Announcements() {
           <div className="stat-card">
 
             <div className="stat-icon orange">
-              <FaClock />
+              <FaExclamationTriangle />
             </div>
 
             <div>
-              <p>Programmées</p>
-              <h2>4</h2>
+              <p>Importantes</p>
+              <h2>{countByPriorite("importante")}</h2>
             </div>
 
           </div>
@@ -158,12 +190,12 @@ export default function Announcements() {
           <div className="stat-card">
 
             <div className="stat-icon red">
-              <FaArchive />
+              <FaExclamationTriangle />
             </div>
 
             <div>
-              <p>Archivées</p>
-              <h2>2</h2>
+              <p>Urgentes</p>
+              <h2>{countByPriorite("urgente")}</h2>
             </div>
 
           </div>
@@ -180,22 +212,17 @@ export default function Announcements() {
             <input
               type="text"
               placeholder="Rechercher une annonce..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
             />
 
           </div>
 
-          <select>
-            <option>Filtrer par statut</option>
-            <option>Publiée</option>
-            <option>Programmée</option>
-            <option>Archivées</option>
-          </select>
-
-          <select>
-            <option>Filtrer par destinataire</option>
-            <option>Étudiants</option>
-            <option>Enseignants</option>
-            <option>Tous</option>
+          <select value={prioriteFilter} onChange={(e) => setPrioriteFilter(e.target.value)}>
+            <option value="">Filtrer par priorité</option>
+            <option value="normale">Normale</option>
+            <option value="importante">Importante</option>
+            <option value="urgente">Urgente</option>
           </select>
 
         </div>
@@ -203,14 +230,17 @@ export default function Announcements() {
         {/* TABLE */}
         <div className="announcements-table-container">
 
+          {loading ? (
+            <p style={{ padding: 24 }}>Chargement...</p>
+          ) : (
           <table>
 
             <thead>
 
               <tr>
                 <th>Titre</th>
-                <th>Destinataire</th>
-                <th>Statut</th>
+                <th>Groupe</th>
+                <th>Priorité</th>
                 <th>Publié le</th>
                 <th>Auteur</th>
                 <th>Actions</th>
@@ -220,7 +250,7 @@ export default function Announcements() {
 
             <tbody>
 
-              {announcements.map((item) => (
+              {filteredAnnonces.map((item) => (
 
                 <tr key={item.id}>
 
@@ -228,13 +258,13 @@ export default function Announcements() {
 
                     <div className="announcement-title">
 
-                      <div className={`announcement-icon ${item.color}`}>
-                        {item.icon}
+                      <div className="announcement-icon purple">
+                        <FaBullhorn />
                       </div>
 
                       <div>
-                        <h4>{item.title}</h4>
-                        <p>{item.description}</p>
+                        <h4>{item.titre}</h4>
+                        <p>{item.contenu.slice(0, 60)}{item.contenu.length > 60 ? "..." : ""}</p>
                       </div>
 
                     </div>
@@ -243,20 +273,19 @@ export default function Announcements() {
 
                   <td>
                     <span className="badge audience">
-                      {item.audience}
+                      {item.groupe?.nom || "Tous"}
                     </span>
                   </td>
 
                   <td>
-                    <span className={`badge status ${item.status.toLowerCase()}`}>
-                      {item.status}
+                    <span className={`badge status ${item.priorite}`}>
+                      {item.priorite}
                     </span>
                   </td>
 
                   <td>
                     <div className="date">
-                      <span>{item.date}</span>
-                      <p>{item.time}</p>
+                      <span>{new Date(item.created_at).toLocaleDateString("fr-FR")}</span>
                     </div>
                   </td>
 
@@ -265,11 +294,11 @@ export default function Announcements() {
                     <div className="author">
 
                       <img
-                        src={`https://i.pravatar.cc/40?img=${item.id}`}
+                        src={`https://i.pravatar.cc/40?u=${item.auteur_id}`}
                         alt=""
                       />
 
-                      {item.author}
+                      {item.auteur ? `${item.auteur.prenom} ${item.auteur.nom}` : "—"}
 
                     </div>
 
@@ -277,21 +306,19 @@ export default function Announcements() {
 
                   <td>
 
+                    {canModify(item) && (
                     <div className="actions">
 
-                      <button>
-                        <FaEye />
-                      </button>
-
-                      <button>
+                      <button onClick={() => openEditModal(item)}>
                         <FaEdit />
                       </button>
 
-                      <button className="delete">
+                      <button className="delete" onClick={() => handleDelete(item)}>
                         <FaTrash />
                       </button>
 
                     </div>
+                    )}
 
                   </td>
 
@@ -302,25 +329,7 @@ export default function Announcements() {
             </tbody>
 
           </table>
-
-          {/* FOOTER */}
-          <div className="table-footer">
-
-            <p>
-              Affichage de 1 à 5 sur 24 annonces
-            </p>
-
-            <div className="pagination">
-
-              <button className="active">1</button>
-              <button>2</button>
-              <button>3</button>
-              <span>...</span>
-              <button>4</button>
-
-            </div>
-
-          </div>
+          )}
 
         </div>
 
@@ -333,7 +342,7 @@ export default function Announcements() {
 
               <div className="modal-header">
 
-                <h2>Créer une annonce</h2>
+                <h2>{editingId ? "Modifier l'annonce" : "Créer une annonce"}</h2>
 
                 <button
                   className="close-btn"
@@ -344,7 +353,9 @@ export default function Announcements() {
 
               </div>
 
-              <form className="modal-form">
+              {formError && <p style={{ color: "#dc2626" }}>{formError}</p>}
+
+              <form className="modal-form" onSubmit={handleSubmit}>
 
                 <div className="form-group full">
                   <label>Titre</label>
@@ -352,35 +363,48 @@ export default function Announcements() {
                   <input
                     type="text"
                     placeholder="Titre de l'annonce"
+                    value={form.titre}
+                    onChange={(e) => setForm({ ...form, titre: e.target.value })}
+                    required
                   />
                 </div>
 
                 <div className="form-group">
-                  <label>Destinataire</label>
+                  <label>Groupe (optionnel)</label>
 
-                  <select>
-                    <option>Étudiants</option>
-                    <option>Enseignants</option>
-                    <option>Tous</option>
+                  <select
+                    value={form.groupe_id}
+                    onChange={(e) => setForm({ ...form, groupe_id: e.target.value })}
+                  >
+                    <option value="">Tous les groupes</option>
+                    {groupes.map((g) => (
+                      <option key={g.id} value={g.id}>{g.nom}</option>
+                    ))}
                   </select>
                 </div>
 
                 <div className="form-group">
-                  <label>Statut</label>
+                  <label>Priorité</label>
 
-                  <select>
-                    <option>Publiée</option>
-                    <option>Programmée</option>
-                    <option>Archivées</option>
+                  <select
+                    value={form.priorite}
+                    onChange={(e) => setForm({ ...form, priorite: e.target.value })}
+                  >
+                    <option value="normale">Normale</option>
+                    <option value="importante">Importante</option>
+                    <option value="urgente">Urgente</option>
                   </select>
                 </div>
 
                 <div className="form-group full">
-                  <label>Description</label>
+                  <label>Contenu</label>
 
                   <textarea
                     rows="5"
-                    placeholder="Description..."
+                    placeholder="Contenu de l'annonce..."
+                    value={form.contenu}
+                    onChange={(e) => setForm({ ...form, contenu: e.target.value })}
+                    required
                   />
                 </div>
 
@@ -397,8 +421,9 @@ export default function Announcements() {
                   <button
                     type="submit"
                     className="submit-btn"
+                    disabled={saving}
                   >
-                    Publier
+                    {saving ? "Publication..." : editingId ? "Enregistrer" : "Publier"}
                   </button>
 
                 </div>

@@ -1,219 +1,144 @@
-import { useState } from "react";
-import {
-  FaPlus,
-  FaChevronLeft,
-  FaChevronRight,
-}
- from "react-icons/fa";
+import { useEffect, useMemo, useState } from "react";
+import { FaPlus, FaTimes } from "react-icons/fa";
 import "../styles/schedule.css";
 import Sidebar from "../components/Sidebar";
+import { useAuth } from "../context/AuthContext.jsx";
+import emploisDuTempsApi from "../api/emploisDuTemps";
+import groupesApi from "../api/groupes";
+import modulesApi from "../api/modules";
+import sallesApi from "../api/salles";
+import usersApi from "../api/users";
+
+const JOURS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
+const COLORS = ["blue", "green", "yellow", "purple"];
+
+const EMPTY_FORM = { module_id: "", formateur_id: "", salle_id: "", jour: "Lundi", heure_debut: "", heure_fin: "" };
 
 export default function Schedule() {
+  const { role, user } = useAuth();
+  const isAdmin = role === "admin";
+
+  const [groupes, setGroupes] = useState([]);
+  const [selectedGroupeId, setSelectedGroupeId] = useState("");
+  const [seances, setSeances] = useState([]);
+  const [modules, setModules] = useState([]);
+  const [salles, setSalles] = useState([]);
+  const [formateurs, setFormateurs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
   const [modalOpen, setModalOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState("ai");
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [formError, setFormError] = useState("");
+  const [saving, setSaving] = useState(false);
 
-  const [manualSlot, setManualSlot] = useState({
-    module: "",
-    teacher: "",
-    room: "",
-    day: "",
-    time: "",
-  });
+  // Initial load: groupes + reference data (modules/salles/formateurs only needed for admin's add form)
+  useEffect(() => {
+    const requests = isAdmin
+      ? [groupesApi.list(), modulesApi.list(), sallesApi.list(), usersApi.list()]
+      : [groupesApi.list()];
 
-  const schedule = [
-    {
-      time: "08:00 - 09:30",
-      monday: {
-        title: "Algorithmique",
-        teacher: "Pr. Ahmed Z.",
-        room: "Salle 101",
-        color: "blue",
-      },
-      tuesday: {
-        title: "Base de données",
-        teacher: "Pr. Salma R.",
-        room: "Salle 102",
-        color: "green",
-      },
-      wednesday: {
-        title: "Programmation (C++)",
-        teacher: "Pr. Youssef B.",
-        room: "Salle 101",
-        color: "yellow",
-      },
-      thursday: {
-        title: "Algorithmique",
-        teacher: "Pr. Ahmed Z.",
-        room: "Salle 101",
-        color: "blue",
-      },
-      friday: {
-        title: "Anglais",
-        teacher: "Pr. Sara K.",
-        room: "Salle 203",
-        color: "purple",
-      },
-      saturday: {
-        title: "Base de données",
-        teacher: "Pr. Salma R.",
-        room: "Salle 102",
-        color: "green",
-      },
-    },
+    Promise.all(requests)
+      .then(([groupesData, modulesData, sallesData, usersData]) => {
+        setGroupes(groupesData);
+        if (modulesData) setModules(modulesData);
+        if (sallesData) setSalles(sallesData);
+        if (usersData) setFormateurs(usersData.filter((u) => u.role?.nom === "formateur"));
 
-    {
-      time: "09:45 - 11:15",
-      monday: {
-        title: "Programmation (C++)",
-        teacher: "Pr. Youssef B.",
-        room: "Salle 101",
-        color: "yellow",
-      },
-      tuesday: {
-        title: "Mathématiques",
-        teacher: "Pr. Mostafa H.",
-        room: "Salle 201",
-        color: "purple",
-      },
-      wednesday: {
-        title: "Algorithmique",
-        teacher: "Pr. Ahmed Z.",
-        room: "Salle 101",
-        color: "blue",
-      },
-      thursday: {
-        title: "Base de données",
-        teacher: "Pr. Salma R.",
-        room: "Salle 102",
-        color: "green",
-      },
-      friday: {
-        title: "Programmation (C++)",
-        teacher: "Pr. Youssef B.",
-        room: "Salle 101",
-        color: "yellow",
-      },
-      saturday: {
-        title: "Mathématiques",
-        teacher: "Pr. Mostafa H.",
-        room: "Salle 201",
-        color: "purple",
-      },
-    },
+        // Default selection: student -> their own groupe; teacher/admin -> first groupe
+        const defaultGroupeId = role === "student" ? user?.groupe_id : groupesData[0]?.id;
+        if (defaultGroupeId) setSelectedGroupeId(String(defaultGroupeId));
+      })
+      .catch(() => setError("Impossible de charger les données."));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-    {
-      time: "11:30 - 13:00",
-      monday: {
-        title: "Anglais",
-        teacher: "Pr. Sara K.",
-        room: "Salle 203",
-        color: "purple",
-      },
-      tuesday: {
-        title: "Programmation (C++)",
-        teacher: "Pr. Youssef B.",
-        room: "Salle 101",
-        color: "yellow",
-      },
-      wednesday: {
-        title: "Base de données",
-        teacher: "Pr. Salma R.",
-        room: "Salle 102",
-        color: "green",
-      },
-      thursday: {
-        title: "Mathématiques",
-        teacher: "Pr. Mostafa H.",
-        room: "Salle 201",
-        color: "purple",
-      },
-      friday: {
-        title: "Algorithmique",
-        teacher: "Pr. Ahmed Z.",
-        room: "Salle 101",
-        color: "blue",
-      },
-      saturday: null,
-    },
+  const loadSeances = (groupeId) => {
+    if (!groupeId) return;
+    setLoading(true);
+    emploisDuTempsApi
+      .list({ groupe_id: groupeId })
+      .then(setSeances)
+      .catch(() => setError("Impossible de charger l'emploi du temps."))
+      .finally(() => setLoading(false));
+  };
 
-    {
-      time: "14:00 - 15:30",
-      monday: {
-        title: "Base de données",
-        teacher: "Pr. Salma R.",
-        room: "Salle 102",
-        color: "green",
-      },
-      tuesday: {
-        title: "Algorithmique",
-        teacher: "Pr. Ahmed Z.",
-        room: "Salle 101",
-        color: "blue",
-      },
-      wednesday: {
-        title: "Anglais",
-        teacher: "Pr. Sara K.",
-        room: "Salle 203",
-        color: "purple",
-      },
-      thursday: {
-        title: "Programmation (C++)",
-        teacher: "Pr. Youssef B.",
-        room: "Salle 101",
-        color: "yellow",
-      },
-      friday: {
-        title: "Base de données",
-        teacher: "Pr. Salma R.",
-        room: "Salle 102",
-        color: "green",
-      },
-      saturday: null,
-    },
+  useEffect(() => {
+    if (selectedGroupeId) loadSeances(selectedGroupeId);
+  }, [selectedGroupeId]);
 
-    {
-      time: "15:45 - 17:15",
-      monday: {
-        title: "Mathématiques",
-        teacher: "Pr. Mostafa H.",
-        room: "Salle 201",
-        color: "purple",
-      },
-      tuesday: null,
-      wednesday: {
-        title: "Algorithmique",
-        teacher: "Pr. Ahmed Z.",
-        room: "Salle 101",
-        color: "blue",
-      },
-      thursday: {
-        title: "Anglais",
-        teacher: "Pr. Sara K.",
-        room: "Salle 203",
-        color: "purple",
-      },
-      friday: null,
-      saturday: null,
-    },
-  ];
+  const timeSlots = useMemo(() => {
+    const unique = new Map();
+    seances.forEach((s) => {
+      const key = `${s.heure_debut}-${s.heure_fin}`;
+      unique.set(key, { heure_debut: s.heure_debut, heure_fin: s.heure_fin });
+    });
+    return [...unique.values()].sort((a, b) => a.heure_debut.localeCompare(b.heure_debut));
+  }, [seances]);
 
-  const renderCourse = (course) => {
-    if (!course)
-      return <div className="empty-slot">—</div>;
+  const findSeance = (jour, slot) =>
+    seances.find((s) => s.jour === jour && s.heure_debut === slot.heure_debut && s.heure_fin === slot.heure_fin);
 
+  const selectedGroupe = groupes.find((g) => String(g.id) === String(selectedGroupeId));
+
+  const modulesForGroupe = useMemo(() => {
+    if (!selectedGroupe) return modules;
+    return modules.filter((m) => m.filiere_id === selectedGroupe.filiere_id);
+  }, [modules, selectedGroupe]);
+
+  const openCreateModal = () => {
+    setForm(EMPTY_FORM);
+    setFormError("");
+    setModalOpen(true);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setFormError("");
+    setSaving(true);
+    try {
+      await emploisDuTempsApi.create({ ...form, groupe_id: selectedGroupeId });
+      setModalOpen(false);
+      loadSeances(selectedGroupeId);
+    } catch (err) {
+      const errors = err.response?.data?.errors;
+      setFormError(errors ? Object.values(errors).flat().join(" ") : "Une erreur est survenue.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (seance) => {
+    if (!window.confirm(`Supprimer la séance "${seance.module?.nom}" (${seance.jour}) ?`)) return;
+    try {
+      await emploisDuTempsApi.remove(seance.id);
+      setSeances((prev) => prev.filter((s) => s.id !== seance.id));
+    } catch {
+      setError("Impossible de supprimer cette séance.");
+    }
+  };
+
+  const renderCourse = (seance) => {
+    if (!seance) return <div className="empty-slot">—</div>;
+    const color = COLORS[seance.module_id % COLORS.length];
     return (
-      <div className={`course-card ${course.color}`}>
-        <h4>{course.title}</h4>
-        <p>{course.teacher}</p>
-        <span>{course.room}</span>
+      <div className={`course-card ${color}`}>
+        {isAdmin && (
+          <button className="delete-slot-btn" onClick={() => handleDelete(seance)} title="Supprimer">
+            <FaTimes />
+          </button>
+        )}
+        <h4>{seance.module?.nom}</h4>
+        <p>{seance.formateur?.prenom} {seance.formateur?.nom}</p>
+        <span>{seance.salle?.nom}</span>
       </div>
     );
   };
 
   return (
     <div className="dashboard">
-      
-            <Sidebar role="admin" />
+
+          <Sidebar />
     <div className="schedule-page">
       {/* TOPBAR */}
       <div className="schedule-topbar">
@@ -222,110 +147,67 @@ export default function Schedule() {
         </div>
       </div>
 
+      {error && <p style={{ color: "#dc2626" }}>{error}</p>}
+
       {/* FILTERS */}
       <div className="schedule-filters">
         <div className="filter-group">
-          <label>Filière</label>
-          <select>
-            <option>Informatique</option>
-          </select>
-        </div>
-
-        <div className="filter-group">
           <label>Groupe</label>
-          <select>
-            <option>Groupe 1</option>
+          <select
+            value={selectedGroupeId}
+            onChange={(e) => setSelectedGroupeId(e.target.value)}
+            disabled={role === "student"}
+          >
+            {groupes.map((g) => (
+              <option key={g.id} value={g.id}>{g.filiere?.nom} — {g.nom}</option>
+            ))}
           </select>
         </div>
 
-        <div className="filter-group">
-          <label>Semestre</label>
-          <select>
-            <option>Semestre 2</option>
-          </select>
-        </div>
-
-        <div className="filter-group week-group">
-          <label>Semaine</label>
-
-          <div className="week-controls">
-            <button>
-              <FaChevronLeft />
-            </button>
-
-            <select>
-              <option>13 - 19 Mai 2024</option>
-            </select>
-
-            <button>
-              <FaChevronRight />
-            </button>
-
-            <button className="today-btn">
-              Aujourd'hui
-            </button>
-          </div>
-        </div>
-
-        <button
-          className="add-btn"
-          onClick={() => setModalOpen(true)}
-        >
-          <FaPlus />
-          Ajouter un emploi du temps
-        </button>
+        {isAdmin && (
+          <button
+            className="add-btn"
+            onClick={openCreateModal}
+            disabled={!selectedGroupeId}
+          >
+            <FaPlus />
+            Ajouter une séance
+          </button>
+        )}
       </div>
 
       {/* TABLE */}
       <div className="schedule-table-wrapper">
+        {loading ? (
+          <p style={{ padding: 24 }}>Chargement...</p>
+        ) : timeSlots.length === 0 ? (
+          <p style={{ padding: 24 }}>Aucune séance programmée pour ce groupe.</p>
+        ) : (
         <table className="schedule-table">
           <thead>
             <tr>
               <th></th>
-              <th>
-                Lundi
-                <span>13 Mai</span>
-              </th>
-              <th>
-                Mardi
-                <span>14 Mai</span>
-              </th>
-              <th>
-                Mercredi
-                <span>15 Mai</span>
-              </th>
-              <th>
-                Jeudi
-                <span>16 Mai</span>
-              </th>
-              <th>
-                Vendredi
-                <span>17 Mai</span>
-              </th>
-              <th>
-                Samedi
-                <span>18 Mai</span>
-              </th>
+              {JOURS.map((jour) => (
+                <th key={jour}>{jour}</th>
+              ))}
             </tr>
           </thead>
 
           <tbody>
-            {schedule.map((row, index) => (
+            {timeSlots.map((slot, index) => (
               <tr key={index}>
-                <td className="time-cell">{row.time}</td>
-                <td>{renderCourse(row.monday)}</td>
-                <td>{renderCourse(row.tuesday)}</td>
-                <td>{renderCourse(row.wednesday)}</td>
-                <td>{renderCourse(row.thursday)}</td>
-                <td>{renderCourse(row.friday)}</td>
-                <td>{renderCourse(row.saturday)}</td>
+                <td className="time-cell">{slot.heure_debut.slice(0, 5)} - {slot.heure_fin.slice(0, 5)}</td>
+                {JOURS.map((jour) => (
+                  <td key={jour}>{renderCourse(findSeance(jour, slot))}</td>
+                ))}
               </tr>
             ))}
           </tbody>
         </table>
+        )}
 
         <div className="schedule-footer">
-          ⓘ Cliquez sur un créneau pour voir les détails ou le modifier.
+          ⓘ {isAdmin ? "Cliquez sur ✕ pour supprimer une séance." : "Consultation de l'emploi du temps."}
         </div>
       </div>
 
@@ -336,110 +218,85 @@ export default function Schedule() {
 
       {/* HEADER */}
       <div className="modal-header">
-        <h2>Créer emploi du temps</h2>
+        <h2>Ajouter une séance</h2>
 
         <button onClick={() => setModalOpen(false)}>
           ✕
         </button>
       </div>
 
-      {/* TABS */}
-      <div className="modal-tabs">
+      {formError && <p style={{ color: "#dc2626" }}>{formError}</p>}
 
-        <button
-          className={activeTab === "ai" ? "active" : ""}
-          onClick={() => setActiveTab("ai")}
-        >
-          🤖 Génération IA
-        </button>
-
-        <button
-          className={activeTab === "manual" ? "active" : ""}
-          onClick={() => setActiveTab("manual")}
-        >
-          ✍️ Manuel
-        </button>
-
-      </div>
-
-      {/* AI TAB */}
-
-
-      {/* MANUAL TAB */}
-      {activeTab === "manual" && (
+      <form onSubmit={handleSubmit}>
         <div className="manual-content">
 
           <div className="manual-grid">
 
+            <select
+              value={form.module_id}
+              onChange={(e) => setForm({ ...form, module_id: e.target.value })}
+              required
+            >
+              <option value="">Module</option>
+              {modulesForGroupe.map((m) => (
+                <option key={m.id} value={m.id}>{m.nom}</option>
+              ))}
+            </select>
+
+            <select
+              value={form.formateur_id}
+              onChange={(e) => setForm({ ...form, formateur_id: e.target.value })}
+              required
+            >
+              <option value="">Formateur</option>
+              {formateurs.map((f) => (
+                <option key={f.id} value={f.id}>{f.prenom} {f.nom}</option>
+              ))}
+            </select>
+
+            <select
+              value={form.salle_id}
+              onChange={(e) => setForm({ ...form, salle_id: e.target.value })}
+              required
+            >
+              <option value="">Salle</option>
+              {salles.map((s) => (
+                <option key={s.id} value={s.id}>{s.nom}</option>
+              ))}
+            </select>
+
+            <select
+              value={form.jour}
+              onChange={(e) => setForm({ ...form, jour: e.target.value })}
+              required
+            >
+              {JOURS.map((jour) => (
+                <option key={jour} value={jour}>{jour}</option>
+              ))}
+            </select>
+
             <input
-              placeholder="Module"
-              value={manualSlot.module}
-              onChange={(e) =>
-                setManualSlot({
-                  ...manualSlot,
-                  module: e.target.value,
-                })
-              }
+              type="time"
+              placeholder="Heure de début"
+              value={form.heure_debut}
+              onChange={(e) => setForm({ ...form, heure_debut: e.target.value })}
+              required
             />
 
             <input
-              placeholder="Professeur"
-              value={manualSlot.teacher}
-              onChange={(e) =>
-                setManualSlot({
-                  ...manualSlot,
-                  teacher: e.target.value,
-                })
-              }
-            />
-
-            <input
-              placeholder="Salle"
-              value={manualSlot.room}
-              onChange={(e) =>
-                setManualSlot({
-                  ...manualSlot,
-                  room: e.target.value,
-                })
-              }
-            />
-
-            <input
-              placeholder="Jour"
-              value={manualSlot.day}
-              onChange={(e) =>
-                setManualSlot({
-                  ...manualSlot,
-                  day: e.target.value,
-                })
-              }
-            />
-
-            <input
-              placeholder="Heure"
-              value={manualSlot.time}
-              onChange={(e) =>
-                setManualSlot({
-                  ...manualSlot,
-                  time: e.target.value,
-                })
-              }
+              type="time"
+              placeholder="Heure de fin"
+              value={form.heure_fin}
+              onChange={(e) => setForm({ ...form, heure_fin: e.target.value })}
+              required
             />
 
           </div>
 
-          <button
-            className="add-slot-btn"
-            onClick={() => {
-              alert("Créneau ajouté !");
-            }}
-          >
-            ➕ Ajouter un créneau
-          </button>
-
           <div className="modal-actions">
 
             <button
+              type="button"
               className="cancel-btn"
               onClick={() => setModalOpen(false)}
             >
@@ -447,19 +304,17 @@ export default function Schedule() {
             </button>
 
             <button
+              type="submit"
               className="generate-btn"
-              onClick={() => {
-                alert("Emploi du temps enregistré !");
-                setModalOpen(false);
-              }}
+              disabled={saving}
             >
-              Enregistrer
+              {saving ? "Enregistrement..." : "Ajouter"}
             </button>
 
           </div>
 
         </div>
-      )}
+      </form>
 
     </div>
   </div>

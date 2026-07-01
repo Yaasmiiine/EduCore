@@ -1,162 +1,261 @@
 import "../styles/users.css";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Sidebar from "../components/Sidebar";
+import usersApi from "../api/users";
+import groupesApi from "../api/groupes";
+import { listRoles } from "../api/roles";
+import { toFrontendRole } from "../utils/auth.jsx";
 
 import {
   FaSearch,
   FaPlus,
   FaUsers,
-  FaEye,
   FaEdit,
   FaTrash
 } from "react-icons/fa";
 
-const users = [
-  {
-    id: 1,
-    name: "John Doe",
-    email: "john@example.com",
-    role: "Admin",
-    status: "Active",
-    joined: "May 12, 2024"
-  },
-  {
-    id: 2,
-    name: "Sarah Johnson",
-    email: "sarah@example.com",
-    role: "Teacher",
-    status: "Active",
-    joined: "May 10, 2024"
-  },
-  {
-    id: 3,
-    name: "Michael Brown",
-    email: "michael@example.com",
-    role: "Teacher",
-    status: "Active",
-    joined: "May 8, 2024"
-  },
-  {
-    id: 4,
-    name: "Emily Davis",
-    email: "emily@example.com",
-    role: "Student",
-    status: "Active",
-    joined: "May 6, 2024"
-  },
-  {
-    id: 5,
-    name: "David Wilson",
-    email: "david@example.com",
-    role: "Student",
-    status: "Inactive",
-    joined: "May 5, 2024"
-  }
-];
+const EMPTY_FORM = { nom: "", prenom: "", email: "", password: "", role_id: "", groupe_id: "" };
 
 export default function Users() {
+  const [users, setUsers] = useState([]);
+  const [roles, setRoles] = useState([]);
+  const [groupes, setGroupes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
   const [showModal, setShowModal] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [formError, setFormError] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const [search, setSearch] = useState("");
+  const [roleFilter, setRoleFilter] = useState("");
+
+  const loadAll = () => {
+    setLoading(true);
+    return Promise.all([usersApi.list(), listRoles(), groupesApi.list()])
+      .then(([usersData, rolesData, groupesData]) => {
+        setUsers(usersData);
+        setRoles(rolesData);
+        setGroupes(groupesData);
+        setError("");
+      })
+      .catch(() => setError("Impossible de charger les utilisateurs."))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    loadAll();
+  }, []);
+
+  const selectedRoleNom = roles.find((r) => String(r.id) === String(form.role_id))?.nom;
+  const isStagiaireRole = selectedRoleNom === "stagiaire";
+
+  const openCreateModal = () => {
+    setEditingId(null);
+    setForm(EMPTY_FORM);
+    setFormError("");
+    setShowModal(true);
+  };
+
+  const openEditModal = (user) => {
+    setEditingId(user.id);
+    setForm({
+      nom: user.nom,
+      prenom: user.prenom,
+      email: user.email,
+      password: "",
+      role_id: user.role_id,
+      groupe_id: user.groupe_id || "",
+    });
+    setFormError("");
+    setShowModal(true);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setFormError("");
+    setSaving(true);
+
+    const payload = {
+      nom: form.nom,
+      prenom: form.prenom,
+      email: form.email,
+      role_id: form.role_id,
+      groupe_id: form.groupe_id || null,
+    };
+    if (!editingId) payload.password = form.password;
+
+    try {
+      if (editingId) {
+        await usersApi.update(editingId, payload);
+      } else {
+        await usersApi.create(payload);
+      }
+      setShowModal(false);
+      await loadAll();
+    } catch (err) {
+      const errors = err.response?.data?.errors;
+      setFormError(
+        errors ? Object.values(errors).flat().join(" ") : "Une erreur est survenue."
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (user) => {
+    if (!window.confirm(`Supprimer ${user.prenom} ${user.nom} ?`)) return;
+    try {
+      await usersApi.remove(user.id);
+      setUsers((prev) => prev.filter((u) => u.id !== user.id));
+    } catch {
+      setError("Impossible de supprimer cet utilisateur.");
+    }
+  };
+
+  const filteredUsers = useMemo(() => {
+    return users.filter((u) => {
+      const fullName = `${u.prenom} ${u.nom} ${u.email}`.toLowerCase();
+      const matchesSearch = fullName.includes(search.toLowerCase());
+      const matchesRole = !roleFilter || u.role?.nom === roleFilter;
+      return matchesSearch && matchesRole;
+    });
+  }, [users, search, roleFilter]);
 
   return (
     <div className="dashboard">
 
-      <Sidebar role="admin" />
+      <Sidebar />
 
       {/* MODAL */}
+      {showModal && (
 
-{showModal && (
+        <div className="modal-overlay">
 
-  <div className="modal-overlay">
+          <div className="modal">
 
-    <div className="modal">
+            <div className="modal-header">
 
-      <div className="modal-header">
+              <h2>{editingId ? "Modifier l'utilisateur" : "Ajouter un utilisateur"}</h2>
 
-        <h2>Add New User</h2>
+              <button
+                className="close-btn"
+                onClick={() => setShowModal(false)}
+              >
+                ×
+              </button>
 
-        <button
-          className="close-btn"
-          onClick={() => setShowModal(false)}
-        >
-          ×
-        </button>
+            </div>
 
-      </div>
+            {formError && <p style={{ color: "#dc2626", gridColumn: "span 2" }}>{formError}</p>}
 
-      <form className="modal-form">
+            <form className="modal-form" onSubmit={handleSubmit}>
 
-        <div className="form-group">
-          <label>Full Name</label>
+              <div className="form-group">
+                <label>Prénom</label>
+                <input
+                  type="text"
+                  value={form.prenom}
+                  onChange={(e) => setForm({ ...form, prenom: e.target.value })}
+                  required
+                />
+              </div>
 
-          <input
-            type="text"
-            placeholder="Enter full name"
-          />
+              <div className="form-group">
+                <label>Nom</label>
+                <input
+                  type="text"
+                  value={form.nom}
+                  onChange={(e) => setForm({ ...form, nom: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Email</label>
+                <input
+                  type="email"
+                  value={form.email}
+                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Rôle</label>
+
+                <select
+                  value={form.role_id}
+                  onChange={(e) => setForm({ ...form, role_id: e.target.value, groupe_id: "" })}
+                  required
+                >
+                  <option value="">Sélectionner un rôle</option>
+                  {roles.map((role) => (
+                    <option key={role.id} value={role.id}>{role.nom}</option>
+                  ))}
+                </select>
+              </div>
+
+              {!editingId && (
+                <div className="form-group">
+                  <label>Mot de passe</label>
+                  <input
+                    type="password"
+                    value={form.password}
+                    onChange={(e) => setForm({ ...form, password: e.target.value })}
+                    minLength={6}
+                    required
+                  />
+                </div>
+              )}
+
+              {isStagiaireRole && (
+                <div className="form-group">
+                  <label>Groupe</label>
+                  <select
+                    value={form.groupe_id}
+                    onChange={(e) => setForm({ ...form, groupe_id: e.target.value })}
+                    required
+                  >
+                    <option value="">Sélectionner un groupe</option>
+                    {groupes.map((groupe) => (
+                      <option key={groupe.id} value={groupe.id}>
+                        {groupe.filiere?.nom} — {groupe.nom}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              <div className="modal-actions">
+
+                <button
+                  type="button"
+                  className="cancel-btn"
+                  onClick={() => setShowModal(false)}
+                >
+                  Annuler
+                </button>
+
+                <button
+                  type="submit"
+                  className="submit-btn"
+                  disabled={saving}
+                >
+                  {saving ? "Enregistrement..." : editingId ? "Enregistrer" : "Ajouter"}
+                </button>
+
+              </div>
+
+            </form>
+
+          </div>
+
         </div>
 
-        <div className="form-group">
-          <label>Email</label>
-
-          <input
-            type="email"
-            placeholder="Enter email"
-          />
-        </div>
-
-        <div className="form-group">
-          <label>Role</label>
-
-          <select>
-            <option>Admin</option>
-            <option>Teacher</option>
-            <option>Student</option>
-          </select>
-        </div>
-
-        <div className="form-group">
-          <label>Password</label>
-
-          <input
-            type="password"
-            placeholder="Enter password"
-          />
-        </div>
-
-        <div className="form-group">
-          <label>Status</label>
-
-          <select>
-            <option>Active</option>
-            <option>Inactive</option>
-          </select>
-        </div>
-
-        <div className="modal-actions">
-
-          <button
-            type="button"
-            className="cancel-btn"
-            onClick={() => setShowModal(false)}
-          >
-            Cancel
-          </button>
-
-          <button
-            type="submit"
-            className="submit-btn"
-          >
-            Add User
-          </button>
-
-        </div>
-
-      </form>
-
-    </div>
-
-  </div>
-
-)}
+      )}
 
       <main className="users-page">
 
@@ -164,19 +263,21 @@ export default function Users() {
         <div className="users-header">
 
           <div>
-            <h1>Users</h1>
-            <p>Manage all users in the system</p>
+            <h1>Utilisateurs</h1>
+            <p>Gérez tous les utilisateurs de la plateforme</p>
           </div>
 
           <button
             className="add-user-btn"
-            onClick={() => setShowModal(true)}
+            onClick={openCreateModal}
           >
             <FaPlus />
-            Add User
+            Ajouter un utilisateur
           </button>
 
         </div>
+
+        {error && <p style={{ color: "#dc2626", marginBottom: 16 }}>{error}</p>}
 
         {/* TOP SECTION */}
         <div className="users-top">
@@ -188,15 +289,17 @@ export default function Users() {
 
               <input
                 type="text"
-                placeholder="Search users..."
+                placeholder="Rechercher un utilisateur..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
               />
             </div>
 
-            <select>
-              <option>Filter by role</option>
-              <option>Admin</option>
-              <option>Teacher</option>
-              <option>Student</option>
+            <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}>
+              <option value="">Filtrer par rôle</option>
+              {roles.map((role) => (
+                <option key={role.id} value={role.nom}>{role.nom}</option>
+              ))}
             </select>
 
           </div>
@@ -208,8 +311,8 @@ export default function Users() {
             </div>
 
             <div>
-              <p>Total Users</p>
-              <h2>132</h2>
+              <p>Total utilisateurs</p>
+              <h2>{users.length}</h2>
             </div>
 
           </div>
@@ -219,17 +322,19 @@ export default function Users() {
         {/* TABLE */}
         <div className="table-container">
 
+          {loading ? (
+            <p style={{ padding: 24 }}>Chargement...</p>
+          ) : (
           <table>
 
             <thead>
 
               <tr>
                 <th>#</th>
-                <th>Name</th>
+                <th>Nom</th>
                 <th>Email</th>
-                <th>Role</th>
-                <th>Status</th>
-                <th>Joined At</th>
+                <th>Rôle</th>
+                <th>Groupe</th>
                 <th>Actions</th>
               </tr>
 
@@ -237,7 +342,7 @@ export default function Users() {
 
             <tbody>
 
-              {users.map((user) => (
+              {filteredUsers.map((user) => (
 
                 <tr key={user.id}>
 
@@ -245,42 +350,32 @@ export default function Users() {
 
                   <td className="user-name">
                     <img
-                      src={`https://i.pravatar.cc/40?img=${user.id}`}
+                      src={`https://i.pravatar.cc/40?u=${user.id}`}
                       alt=""
                     />
 
-                    {user.name}
+                    {user.prenom} {user.nom}
                   </td>
 
                   <td>{user.email}</td>
 
                   <td>
-                    <span className={`role ${user.role.toLowerCase()}`}>
-                      {user.role}
+                    <span className={`role ${toFrontendRole(user.role?.nom)}`}>
+                      {user.role?.nom}
                     </span>
                   </td>
 
-                  <td>
-                    <span className={`status ${user.status.toLowerCase()}`}>
-                      {user.status}
-                    </span>
-                  </td>
-
-                  <td>{user.joined}</td>
+                  <td>{user.groupe?.nom || "—"}</td>
 
                   <td>
 
                     <div className="actions">
 
-                      <button>
-                        <FaEye />
-                      </button>
-
-                      <button>
+                      <button onClick={() => openEditModal(user)}>
                         <FaEdit />
                       </button>
 
-                      <button className="delete">
+                      <button className="delete" onClick={() => handleDelete(user)}>
                         <FaTrash />
                       </button>
 
@@ -295,29 +390,7 @@ export default function Users() {
             </tbody>
 
           </table>
-
-         {/* FOOTER */}
-        <div className="table-footer">
-
-          <p>
-            Affichage de 1 à 6 sur 12 filières
-          </p>
-
-          <div className="pagination">
-
-            <button>{"<"}</button>
-
-            <button className="active">
-              1
-            </button>
-
-            <button>2</button>
-
-            <button>{">"}</button>
-
-          </div>
-
-        </div>
+          )}
 
         </div>
 

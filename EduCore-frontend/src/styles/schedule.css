@@ -178,9 +178,24 @@
 /* COURSE CARD */
 
 .course-card {
+  position: relative;
   border-radius: 16px;
   padding: 18px;
   min-height: 120px;
+}
+
+.delete-slot-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.6);
+  color: #ef4444;
+  cursor: pointer;
+  font-size: 13px;
 }
 
 .course-card h4 {
@@ -364,12 +379,14 @@ textarea {
   gap: 15px;
 }
 
-.manual-grid input {
+.manual-grid input,
+.manual-grid select {
   height: 50px;
   border-radius: 12px;
   border: 1px solid #d1d5db;
   padding: 0 14px;
   font-size: 15px;
+  background: white;
 }
 
 .add-slot-btn {

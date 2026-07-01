@@ -1,10 +1,11 @@
 // Filieres.jsx
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import "../styles/filieres.css";
 
 import Sidebar from "../components/Sidebar";
+import filieresApi from "../api/filieres";
 
 import {
   FaSearch,
@@ -15,51 +16,91 @@ import {
   FaTrash,
 } from "react-icons/fa";
 
-const filieres = [
-  {
-    nom: "Informatique",
-    code: "INFO",
-    description: "Filière d'informatique et technologies",
-    groupes: 6,
-  },
-  {
-    nom: "Génie Civil",
-    code: "GC",
-    description: "Génie civil et hydraulique",
-    groupes: 4,
-  },
-  {
-    nom: "Électrotechnique",
-    code: "ELT",
-    description: "Électrotechnique et automatisme",
-    groupes: 5,
-  },
-  {
-    nom: "Gestion",
-    code: "GEST",
-    description: "Sciences de gestion",
-    groupes: 3,
-  },
-  {
-    nom: "Médecine",
-    code: "MED",
-    description: "Médecine générale",
-    groupes: 2,
-  },
-  {
-    nom: "Architecture",
-    code: "ARCH",
-    description: "Architecture et urbanisme",
-    groupes: 2,
-  },
-];
+const EMPTY_FORM = { nom: "", code: "", description: "" };
 
 export default function Filieres() {
-    const [showModal, setShowModal] = useState(false);
+  const [filieres, setFilieres] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const [showModal, setShowModal] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [formError, setFormError] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [search, setSearch] = useState("");
+
+  const loadFilieres = () => {
+    setLoading(true);
+    return filieresApi
+      .list()
+      .then(setFilieres)
+      .catch(() => setError("Impossible de charger les filières."))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    loadFilieres();
+  }, []);
+
+  const openCreateModal = () => {
+    setEditingId(null);
+    setForm(EMPTY_FORM);
+    setFormError("");
+    setShowModal(true);
+  };
+
+  const openEditModal = (filiere) => {
+    setEditingId(filiere.id);
+    setForm({ nom: filiere.nom, code: filiere.code, description: filiere.description || "" });
+    setFormError("");
+    setShowModal(true);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setFormError("");
+    setSaving(true);
+    try {
+      if (editingId) {
+        await filieresApi.update(editingId, form);
+      } else {
+        await filieresApi.create(form);
+      }
+      setShowModal(false);
+      await loadFilieres();
+    } catch (err) {
+      const errors = err.response?.data?.errors;
+      setFormError(errors ? Object.values(errors).flat().join(" ") : "Une erreur est survenue.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (filiere) => {
+    if (!window.confirm(`Supprimer la filière "${filiere.nom}" ?`)) return;
+    try {
+      await filieresApi.remove(filiere.id);
+      setFilieres((prev) => prev.filter((f) => f.id !== filiere.id));
+    } catch {
+      setError("Impossible de supprimer cette filière.");
+    }
+  };
+
+  const filteredFilieres = useMemo(
+    () =>
+      filieres.filter((f) =>
+        `${f.nom} ${f.code}`.toLowerCase().includes(search.toLowerCase())
+      ),
+    [filieres, search]
+  );
+
+  const totalGroupes = filieres.reduce((sum, f) => sum + (f.groupes?.length || 0), 0);
+
   return (
   <div className="dashboard">
 
-    <Sidebar role="admin" />
+    <Sidebar />
     {/* MODAL */}
 
 {showModal && (
@@ -70,7 +111,7 @@ export default function Filieres() {
 
       <div className="modal-header">
 
-        <h2>Ajouter une filière</h2>
+        <h2>{editingId ? "Modifier la filière" : "Ajouter une filière"}</h2>
 
         <button
           className="close-btn"
@@ -81,7 +122,9 @@ export default function Filieres() {
 
       </div>
 
-      <form className="modal-form">
+      {formError && <p style={{ color: "#dc2626" }}>{formError}</p>}
+
+      <form className="modal-form" onSubmit={handleSubmit}>
 
         <div className="form-group">
 
@@ -89,7 +132,10 @@ export default function Filieres() {
 
           <input
             type="text"
-            placeholder="Ex: Informatique"
+            placeholder="Ex: Développement Digital"
+            value={form.nom}
+            onChange={(e) => setForm({ ...form, nom: e.target.value })}
+            required
           />
 
         </div>
@@ -100,7 +146,10 @@ export default function Filieres() {
 
           <input
             type="text"
-            placeholder="Ex: INFO"
+            placeholder="Ex: DEV101"
+            value={form.code}
+            onChange={(e) => setForm({ ...form, code: e.target.value })}
+            required
           />
 
         </div>
@@ -112,17 +161,8 @@ export default function Filieres() {
           <textarea
             rows="4"
             placeholder="Description de la filière..."
-          />
-
-        </div>
-
-        <div className="form-group">
-
-          <label>Nombre de groupes</label>
-
-          <input
-            type="number"
-            placeholder="Ex: 6"
+            value={form.description}
+            onChange={(e) => setForm({ ...form, description: e.target.value })}
           />
 
         </div>
@@ -140,8 +180,9 @@ export default function Filieres() {
           <button
             type="submit"
             className="submit-btn"
+            disabled={saving}
           >
-            Ajouter
+            {saving ? "Enregistrement..." : editingId ? "Enregistrer" : "Ajouter"}
           </button>
 
         </div>
@@ -169,13 +210,15 @@ export default function Filieres() {
 
         <button
             className="add-filiere-btn"
-            onClick={() => setShowModal(true)}
+            onClick={openCreateModal}
         >
           <FaPlus />
           Ajouter une filière
         </button>
 
       </div>
+
+      {error && <p style={{ color: "#dc2626" }}>{error}</p>}
 
       {/* STATS */}
       <div className="filieres-stats">
@@ -187,7 +230,7 @@ export default function Filieres() {
           </div>
 
           <div>
-            <h2>12</h2>
+            <h2>{filieres.length}</h2>
             <p>Total filières</p>
           </div>
 
@@ -200,7 +243,7 @@ export default function Filieres() {
           </div>
 
           <div>
-            <h2>28</h2>
+            <h2>{totalGroupes}</h2>
             <p>Total groupes</p>
           </div>
 
@@ -221,6 +264,8 @@ export default function Filieres() {
             <input
               type="text"
               placeholder="Rechercher une filière..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
             />
 
           </div>
@@ -228,6 +273,9 @@ export default function Filieres() {
         </div>
 
         {/* TABLE */}
+        {loading ? (
+          <p style={{ padding: 24 }}>Chargement...</p>
+        ) : (
         <table className="filieres-table">
 
           <thead>
@@ -244,9 +292,9 @@ export default function Filieres() {
 
           <tbody>
 
-            {filieres.map((filiere, index) => (
+            {filteredFilieres.map((filiere) => (
 
-              <tr key={index}>
+              <tr key={filiere.id}>
 
                 <td className="filiere-name">
                   {filiere.nom}
@@ -256,17 +304,17 @@ export default function Filieres() {
 
                 <td>{filiere.description}</td>
 
-                <td>{filiere.groupes}</td>
+                <td>{filiere.groupes?.length || 0}</td>
 
                 <td>
 
                   <div className="actions">
 
-                    <button className="edit-btn">
+                    <button className="edit-btn" onClick={() => openEditModal(filiere)}>
                       <FaEdit />
                     </button>
 
-                    <button className="delete-btn">
+                    <button className="delete-btn" onClick={() => handleDelete(filiere)}>
                       <FaTrash />
                     </button>
 
@@ -281,29 +329,7 @@ export default function Filieres() {
           </tbody>
 
         </table>
-
-        {/* FOOTER */}
-        <div className="table-footer">
-
-          <p>
-            Affichage de 1 à 6 sur 12 filières
-          </p>
-
-          <div className="pagination">
-
-            <button>{"<"}</button>
-
-            <button className="active">
-              1
-            </button>
-
-            <button>2</button>
-
-            <button>{">"}</button>
-
-          </div>
-
-        </div>
+        )}
 
       </div>
 

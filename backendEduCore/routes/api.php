@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\SalleController;
 use App\Http\Controllers\Api\FichierController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\AiController;
+use App\Models\Role;
 use Illuminate\Support\Facades\Route;
 
 // ─── Public routes ──────────────────────────────────────────────────────────
@@ -41,6 +42,7 @@ Route::middleware('auth:api')->group(function () {
     // Users — admin only
     Route::middleware('role:admin')->group(function () {
         Route::apiResource('users', UserController::class);
+        Route::get('roles', fn () => response()->json(Role::all()));
     });
 
     // Filieres/groupes writes — admin only (reads are public, registered above)

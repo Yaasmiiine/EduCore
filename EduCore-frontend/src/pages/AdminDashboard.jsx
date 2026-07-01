@@ -1,6 +1,10 @@
-import { FaUser, FaCalendarCheck } from "react-icons/fa";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "../styles/dashboard.css";
-import  Sidebar  from "../components/Sidebar";
+import Sidebar from "../components/Sidebar";
+import { getDashboard } from "../api/dashboard";
+import filieresApi from "../api/filieres";
+import modulesApi from "../api/modules";
 
 import {
   FaUserPlus,
@@ -24,61 +28,73 @@ import {
   Legend,
   CategoryScale,
   LinearScale,
-  PointElement,
-  LineElement
 } from "chart.js";
 
-import { Doughnut, Line } from "react-chartjs-2";
+import { Doughnut } from "react-chartjs-2";
 
-ChartJS.register(
-  ArcElement,
-  Tooltip,
-  Legend,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement
-);
+ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale);
+
+const FILIERE_COLORS = ["#3b82f6", "#10b981", "#f97316", "#a855f7", "#ec4899", "#06b6d4"];
 
 export default function AdminDashboard() {
+  const navigate = useNavigate();
+  const [dashboard, setDashboard] = useState(null);
+  const [filiereChart, setFiliereChart] = useState(null);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    getDashboard()
+      .then(setDashboard)
+      .catch(() => setError("Impossible de charger les statistiques."));
+
+    Promise.all([filieresApi.list(), modulesApi.list()])
+      .then(([filieres, modules]) => {
+        const labels = filieres.map((f) => f.nom);
+        const data = filieres.map((f) => modules.filter((m) => m.filiere_id === f.id).length);
+        setFiliereChart({
+          labels,
+          datasets: [{ data, backgroundColor: FILIERE_COLORS }],
+        });
+      })
+      .catch(() => {});
+  }, []);
+
+  if (error) {
+    return (
+      <div className="dashboard">
+        <Sidebar />
+        <main className="main"><p style={{ color: "#dc2626" }}>{error}</p></main>
+      </div>
+    );
+  }
+
+  if (!dashboard) {
+    return (
+      <div className="dashboard">
+        <Sidebar />
+        <main className="main"><p>Chargement...</p></main>
+      </div>
+    );
+  }
+
+  const totalAdmins = dashboard.total_users - dashboard.total_formateurs - dashboard.total_stagiaires;
+
   const stats = [
-    { title: "Total Utilisateurs", icon: <FaUsers />, value: 1248 },
-    { title: "Étudiants", icon: <FaUserGraduate />, value: 912 },
-    { title: "Enseignants", icon: <FaChalkboardTeacher />, value: 275 },
-    { title: "Filières", icon: <FaLayerGroup />, value: 24 },
-    { title: "Modules", icon: <FaBook />, value: 156 },
-    { title: "Emplois du temps", icon: <FaCalendarAlt />, value: 78 },
-    { title: "Annonces", icon: <FaBullhorn />, value: 5 }
+    { title: "Total Utilisateurs", icon: <FaUsers />, value: dashboard.total_users },
+    { title: "Étudiants", icon: <FaUserGraduate />, value: dashboard.total_stagiaires },
+    { title: "Enseignants", icon: <FaChalkboardTeacher />, value: dashboard.total_formateurs },
+    { title: "Groupes", icon: <FaLayerGroup />, value: dashboard.total_groupes },
+    { title: "Modules", icon: <FaBook />, value: dashboard.total_modules },
+    { title: "Fichiers", icon: <FaCalendarAlt />, value: dashboard.total_fichiers },
+    { title: "Annonces", icon: <FaBullhorn />, value: dashboard.total_annonces }
   ];
 
   const userChart = {
     labels: ["Étudiants", "Enseignants", "Admins"],
     datasets: [
       {
-        data: [912, 275, 61],
+        data: [dashboard.total_stagiaires, dashboard.total_formateurs, totalAdmins],
         backgroundColor: ["#6366f1", "#22c55e", "#f59e0b"]
-      }
-    ]
-  };
-
-  const filiereChart = {
-    labels: ["Info", "Gestion", "Génie Civil", "Autres"],
-    datasets: [
-      {
-        data: [35, 25, 20, 20],
-        backgroundColor: ["#3b82f6", "#10b981", "#f97316", "#a855f7"]
-      }
-    ]
-  };
-
-  const activityChart = {
-    labels: ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"],
-    datasets: [
-      {
-        label: "Connexions",
-        data: [400, 600, 700, 500, 650, 550, 400],
-        borderColor: "#6366f1",
-        tension: 0.4
       }
     ]
   };
@@ -86,7 +102,7 @@ export default function AdminDashboard() {
   return (
     <div className="dashboard">
       {/* Sidebar */}
-      <Sidebar role="admin" />
+      <Sidebar />
 
       {/* Main */}
       <main className="main">
@@ -115,23 +131,23 @@ export default function AdminDashboard() {
             <h3>Actions rapides</h3>
 
             <div className="action-grids">
-              <button><FaUserPlus /> Ajouter utilisateur</button>
-              <button><FaSchool /> Créer filière</button>
-              <button><FaUsersCog /> Créer groupe</button>
-              <button><FaBookOpen /> Ajouter module</button>
-              <button><FaCalendarPlus /> Générer emploi</button>
-              <button className="primary"><FaBullhorn /> Publier annonce</button>
+              <button onClick={() => navigate("/users")}><FaUserPlus /> Ajouter utilisateur</button>
+              <button onClick={() => navigate("/filieres")}><FaSchool /> Créer filière</button>
+              <button onClick={() => navigate("/groups")}><FaUsersCog /> Créer groupe</button>
+              <button onClick={() => navigate("/modules")}><FaBookOpen /> Ajouter module</button>
+              <button onClick={() => navigate("/schedule")}><FaCalendarPlus /> Générer emploi</button>
+              <button className="primary" onClick={() => navigate("/announcements")}><FaBullhorn /> Publier annonce</button>
             </div>
           </div>
 
           {/* Activity */}
           <div className="activity">
-            <h3>Activité récente</h3>
+            <h3>Dernières annonces</h3>
             <ul>
-              <li><FaUser /> Nouvel utilisateur ajouté</li>
-              <li><FaCalendarCheck /> Emploi du temps mis à jour</li>
-              <li><FaBullhorn /> Annonce publiée</li>
-              <li><FaBook /> Nouveau module ajouté</li>
+              {dashboard.annonces_recentes.length === 0 && <li>Aucune annonce récente</li>}
+              {dashboard.annonces_recentes.map((a) => (
+                <li key={a.id}><FaBullhorn /> {a.titre}</li>
+              ))}
             </ul>
           </div>
         </div>
@@ -143,29 +159,14 @@ export default function AdminDashboard() {
             <Doughnut data={userChart} />
           </div>
 
-          <div className="chart-box">
-            <h3>Répartition par filière</h3>
-            <Doughnut data={filiereChart} />
-          </div>
-
-          <div className="chart-box wide">
-            <h3>Activité (7 jours)</h3>
-            <Line data={activityChart} />
-          </div>
-        </div>
-
-        {/* Announcements */}
-        <div className="announcements">
-          <h3>Dernières annonces</h3>
-
-          <div className="announcement-list">
-            <div className="announcement"> <FaBullhorn />Réunion pédagogique</div>
-            <div className="announcement"> <FaBullhorn />Projet fin d'année</div>
-            <div className="announcement"> <FaBullhorn />Journée portes ouvertes</div>
-          </div>
+          {filiereChart && (
+            <div className="chart-box">
+              <h3>Modules par filière</h3>
+              <Doughnut data={filiereChart} />
+            </div>
+          )}
         </div>
       </main>
     </div>
   );
 }
-
