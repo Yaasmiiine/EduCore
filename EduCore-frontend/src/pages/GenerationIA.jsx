@@ -116,13 +116,12 @@ export default function GenerationIA() {
 
         {error && <p style={{ color: "#dc2626" }}>{error}</p>}
 
-        <div className="generation-grid">
-          {/* LEFT */}
-          <div className="left-column">
-            <div className="card">
-              <h3>1. Sélection du groupe</h3>
+        <div className="generation-stack">
+          <div className="card selection-card">
+            <h3>1. Sélection du groupe</h3>
 
-              <div className="form-group">
+            <div className="selection-row">
+              <div className="form-group groupe-select">
                 <label>Groupe</label>
                 <select value={selectedGroupeId} onChange={(e) => setSelectedGroupeId(e.target.value)}>
                   {groupes.map((g) => (
@@ -131,27 +130,23 @@ export default function GenerationIA() {
                 </select>
               </div>
 
-              <div className="form-group">
-                <label>Aperçu des données disponibles</label>
+              <div className="stats-grid">
+                <div className="stat-card">
+                  <FaBook />
+                  <h2>{modulesForGroupe.length}</h2>
+                  <p>Modules</p>
+                </div>
 
-                <div className="stats-grid">
-                  <div className="stat-card">
-                    <FaBook />
-                    <h2>{modulesForGroupe.length}</h2>
-                    <p>Modules</p>
-                  </div>
+                <div className="stat-card">
+                  <FaChalkboardTeacher />
+                  <h2>{new Set(modulesForGroupe.map((m) => m.formateur_id)).size}</h2>
+                  <p>Formateurs</p>
+                </div>
 
-                  <div className="stat-card">
-                    <FaChalkboardTeacher />
-                    <h2>{new Set(modulesForGroupe.map((m) => m.formateur_id)).size}</h2>
-                    <p>Formateurs</p>
-                  </div>
-
-                  <div className="stat-card">
-                    <FaDoorOpen />
-                    <h2>{sallesDisponibles.length}</h2>
-                    <p>Salles disponibles</p>
-                  </div>
+                <div className="stat-card">
+                  <FaDoorOpen />
+                  <h2>{sallesDisponibles.length}</h2>
+                  <p>Salles disponibles</p>
                 </div>
               </div>
             </div>
@@ -169,84 +164,81 @@ export default function GenerationIA() {
             {saved && <p style={{ color: "#16a34a", fontWeight: 600 }}>Emploi du temps enregistré avec succès ✅</p>}
           </div>
 
-          {/* RIGHT */}
-          <div className="right-column">
-            {draft && (
-            <div className="card preview-card">
-              <div className="preview-top">
-                <div>
-                  <h3>2. Aperçu du résultat généré</h3>
-                </div>
-
-                <div className="success-badge">
-                  {draft.length} créneau(x) proposé(s)
-                </div>
+          {draft && (
+          <div className="card preview-card">
+            <div className="preview-top">
+              <div>
+                <h3>2. Aperçu du résultat généré</h3>
               </div>
 
-              <div className="timetable">
-                <table>
-                  <thead>
-                    <tr>
-                      <th></th>
-                      {JOURS.map((j) => <th key={j}>{j.slice(0, 3)}.</th>)}
-                    </tr>
-                  </thead>
-
-                  <tbody>
-                    {[...new Set(draft.map((p) => `${p.heure_debut}-${p.heure_fin}`))].sort().map((slotKey) => {
-                      const [hd, hf] = slotKey.split("-");
-                      return (
-                        <tr key={slotKey}>
-                          <td className="time">{hd}{"\n"}{hf}</td>
-                          {JOURS.map((jour) => {
-                            const idx = draft.findIndex((p) => p.jour === jour && p.heure_debut === hd && p.heure_fin === hf);
-                            const p = idx >= 0 ? draft[idx] : null;
-                            return (
-                              <td key={jour}>
-                                {p && (
-                                  <label className={`course ${p.has_conflict ? "pink" : "green"}`} style={{ display: "block", cursor: "pointer" }}>
-                                    <input
-                                      type="checkbox"
-                                      checked={!!included[idx]}
-                                      onChange={(e) => setIncluded({ ...included, [idx]: e.target.checked })}
-                                      style={{ marginRight: 6 }}
-                                    />
-                                    {findModule(p.module_id)?.nom}
-                                    {"\n"}{findSalle(p.salle_id)?.nom}
-                                    {p.has_conflict && "\n⚠ conflit"}
-                                  </label>
-                                )}
-                              </td>
-                            );
-                          })}
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-
-              <div className="bottom-stats">
-                <div>
-                  <FaShieldAlt />
-                  <span>{conflictCount} conflit(s) détecté(s)</span>
-                </div>
-
-                <div>
-                  <FaUsers />
-                  <span>{includedCount} créneau(x) sélectionné(s)</span>
-                </div>
-              </div>
-
-              <div className="bottom-actions">
-                <button className="save-btn" onClick={handleSave} disabled={saving || includedCount === 0}>
-                  <FaSave />
-                  {saving ? "Enregistrement..." : "Enregistrer l'emploi"}
-                </button>
+              <div className="success-badge">
+                {draft.length} créneau(x) proposé(s)
               </div>
             </div>
-            )}
+
+            <div className="timetable">
+              <table>
+                <thead>
+                  <tr>
+                    <th></th>
+                    {JOURS.map((j) => <th key={j}>{j.slice(0, 3)}.</th>)}
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {[...new Set(draft.map((p) => `${p.heure_debut}-${p.heure_fin}`))].sort().map((slotKey) => {
+                    const [hd, hf] = slotKey.split("-");
+                    return (
+                      <tr key={slotKey}>
+                        <td className="time">{hd}{"\n"}{hf}</td>
+                        {JOURS.map((jour) => {
+                          const idx = draft.findIndex((p) => p.jour === jour && p.heure_debut === hd && p.heure_fin === hf);
+                          const p = idx >= 0 ? draft[idx] : null;
+                          return (
+                            <td key={jour}>
+                              {p && (
+                                <label className={`course ${p.has_conflict ? "pink" : "green"}`} style={{ display: "block", cursor: "pointer" }}>
+                                  <input
+                                    type="checkbox"
+                                    checked={!!included[idx]}
+                                    onChange={(e) => setIncluded({ ...included, [idx]: e.target.checked })}
+                                    style={{ marginRight: 6 }}
+                                  />
+                                  {findModule(p.module_id)?.nom}
+                                  {"\n"}{findSalle(p.salle_id)?.nom}
+                                  {p.has_conflict && "\n⚠ conflit"}
+                                </label>
+                              )}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="bottom-stats">
+              <div>
+                <FaShieldAlt />
+                <span>{conflictCount} conflit(s) détecté(s)</span>
+              </div>
+
+              <div>
+                <FaUsers />
+                <span>{includedCount} créneau(x) sélectionné(s)</span>
+              </div>
+            </div>
+
+            <div className="bottom-actions">
+              <button className="save-btn" onClick={handleSave} disabled={saving || includedCount === 0}>
+                <FaSave />
+                {saving ? "Enregistrement..." : "Enregistrer l'emploi"}
+              </button>
+            </div>
           </div>
+          )}
         </div>
       </div>
     </div>

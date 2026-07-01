@@ -489,6 +489,7 @@
 .modules-page .submit-module {
   margin-top: 10px;
   height: 52px;
+  padding: 0 24px;
   border: none;
   border-radius: var(--radius-md);
   background: var(--color-primary);
@@ -497,6 +498,17 @@
   font-weight: 600;
   cursor: pointer;
   transition: 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.modules-page .upload-form .submit-module {
+  margin-top: 0;
+  height: 46px;
+  padding: 0 20px;
+  font-size: 14px;
 }
 
 .modules-page .submit-module:hover {
