@@ -1,3 +1,5 @@
+import "./styles/global.css";
+
 import Navbar from "./components/Navbar";
 import { Routes, Route, useLocation } from "react-router-dom";
 
@@ -21,8 +23,7 @@ import Settings from "./pages/Settings";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 import ChatWidget from "./components/ChatWidget";
-
-import "./styles/global.css";
+import { SidebarProvider } from "./context/SidebarContext.jsx";
 
 function App() {
 
@@ -33,7 +34,7 @@ function App() {
     location.pathname === "/register";
 
   return (
-    <>
+    <SidebarProvider>
 
       {/* HIDE NAVBAR ON HOME, LOGIN & REGISTER */}
       {!isPublicPage && <Navbar />}
@@ -152,7 +153,7 @@ function App() {
         />
 
       </Routes>
-    </>
+    </SidebarProvider>
   );
 }
 

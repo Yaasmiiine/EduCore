@@ -1,9 +1,8 @@
 /* SIDEBAR */
-/* SIDEBAR */
 .sidebar {
-  width: 250px;
-  height: 100vh; /* full screen height */
-  position: sticky; /* keeps sidebar fixed while scrolling */
+  width: var(--sidebar-width);
+  height: 100vh;
+  position: sticky;
   top: 0;
 
   background: linear-gradient(180deg, #0f172a, #1e293b);
@@ -14,8 +13,11 @@
   display: flex;
   flex-direction: column;
 
-  overflow-y: auto; /* sidebar scroll if content too long */
-  flex-shrink: 0; /* prevents shrinking */
+  overflow-y: auto;
+  flex-shrink: 0;
+
+  z-index: 1100;
+  transition: transform 0.3s ease;
 }
 
 /* LOGO */
@@ -37,6 +39,8 @@
 /* MENU */
 .menu {
   list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
 .menu li {
@@ -57,7 +61,7 @@
 }
 
 .menu a.active li{
-  background:#6366f1;
+  background: var(--color-primary);
   color:white;
 }
 
@@ -74,7 +78,7 @@
 
 /* ACTIVE */
 .menu .active {
-  background: #6366f1;
+  background: var(--color-primary);
   color: white;
   font-weight: 500;
 }
@@ -82,4 +86,38 @@
 /* ACTIVE ICON */
 .menu .active svg {
   color: white;
+}
+
+/* MOBILE DRAWER */
+.sidebar-backdrop {
+  display: none;
+}
+
+@media (max-width: 1024px) {
+  .sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    transform: translateX(-100%);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  .sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.5);
+    z-index: 1090;
+  }
+}
+
+@media (max-width: 480px) {
+  .sidebar {
+    width: 82vw;
+    max-width: 280px;
+  }
 }

@@ -137,7 +137,7 @@ export default function TeacherDashboard() {
           <div className="actions">
             <h3>Actions rapides</h3>
 
-            <div className="action-grid">
+            <div className="action-grids">
               <button onClick={() => navigate("/modules")}><FaBookOpen /> Mes modules</button>
               <button onClick={() => navigate("/schedule")}><FaCalendarAlt /> Voir emploi</button>
               <button className="primary" onClick={() => navigate("/announcements")}>

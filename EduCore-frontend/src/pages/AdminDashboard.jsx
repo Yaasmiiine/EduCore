@@ -127,7 +127,7 @@ export default function AdminDashboard() {
         {/* Middle */}
         <div className="middle">
           {/* Actions */}
-          <div className="actionss">
+          <div className="actions">
             <h3>Actions rapides</h3>
 
             <div className="action-grids">

@@ -1,5 +1,6 @@
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
+import { useSidebar } from "../context/SidebarContext.jsx";
 import "../styles/sidebar.css";
 
 import {
@@ -19,6 +20,7 @@ import {
 export default function Sidebar() {
 
   const { role } = useAuth();
+  const { isOpen, close } = useSidebar();
 
   const adminMenu = (
     <>
@@ -197,24 +199,28 @@ export default function Sidebar() {
   );
 
   return (
-    <aside className="sidebar">
+    <>
+      {isOpen && <div className="sidebar-backdrop" onClick={close} />}
 
-      {/* DASHBOARD */}
-      <ul className="menu">
-        <NavLink to="/dashboard">
-          <li>
-            <FaTachometerAlt />
-            Dashboard
-          </li>
-        </NavLink>
-      </ul>
+      <aside className={`sidebar ${isOpen ? "open" : ""}`}>
+
+        {/* DASHBOARD */}
+        <ul className="menu">
+          <NavLink to="/dashboard">
+            <li>
+              <FaTachometerAlt />
+              Dashboard
+            </li>
+          </NavLink>
+        </ul>
 
 
-      {/* ROLE MENU */}
-      {role === "admin" && adminMenu}
-      {role === "teacher" && teacherMenu}
-      {role === "student" && studentMenu}
+        {/* ROLE MENU */}
+        {role === "admin" && adminMenu}
+        {role === "teacher" && teacherMenu}
+        {role === "student" && studentMenu}
 
-    </aside>
+      </aside>
+    </>
   );
 }

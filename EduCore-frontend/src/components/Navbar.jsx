@@ -1,14 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import "../styles/navbar.css";
-import { FiBell, FiLogOut } from "react-icons/fi";
+import { FiBell, FiLogOut, FiMenu } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
+import { useSidebar } from "../context/SidebarContext.jsx";
 import * as notificationsApi from "../api/notifications";
 
 const POLL_INTERVAL_MS = 20000;
 
 export default function Navbar() {
   const { user, logout } = useAuth();
+  const { toggle } = useSidebar();
   const navigate = useNavigate();
 
   const [notifications, setNotifications] = useState([]);
@@ -86,6 +88,9 @@ export default function Navbar() {
 
       {/* LEFT SIDE (LOGO + NAME) */}
       <div className="navbar-left">
+        <button className="hamburger-btn" onClick={toggle} aria-label="Ouvrir le menu">
+          <FiMenu />
+        </button>
         <div className="logo">
           <img src="/logo.png" alt="EduCore Logo" className="logo-icon" />
           <h2>Edu</h2>

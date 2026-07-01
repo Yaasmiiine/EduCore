@@ -321,7 +321,7 @@ export default function Salles() {
                 />
               </div>
 
-              <div className="form-group">
+              <div className="form-group full">
                 <label>Équipement</label>
                 <textarea
                   placeholder="Projecteur, Tableau..."
@@ -342,7 +342,7 @@ export default function Salles() {
                 </select>
               </div>
 
-              <div className="form-buttons">
+              <div className="modal-actions">
                 <button
                   type="button"
                   className="cancel-btn"
@@ -351,7 +351,7 @@ export default function Salles() {
                   Annuler
                 </button>
 
-                <button type="submit" className="save-btn" disabled={saving}>
+                <button type="submit" className="submit-btn" disabled={saving}>
                   {saving ? "Enregistrement..." : editingId ? "Enregistrer" : "Ajouter"}
                 </button>
               </div>

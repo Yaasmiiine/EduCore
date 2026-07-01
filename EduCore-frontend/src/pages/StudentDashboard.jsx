@@ -139,7 +139,7 @@ export default function StudentDashboard() {
           <div className="actions">
             <h3>Accès rapide</h3>
 
-            <div className="action-grid">
+            <div className="action-grids">
               <button onClick={() => navigate("/schedule")}><FaCalendarAlt /> Emploi du temps</button>
               <button onClick={() => navigate("/modules")}><FaBook /> Mes modules</button>
               <button className="primary" onClick={() => navigate("/announcements")}>

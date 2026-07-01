@@ -6,7 +6,7 @@
   height: 58px;
   border-radius: 50%;
   border: none;
-  background: #6366f1;
+  background: var(--color-primary);
   color: white;
   font-size: 22px;
   display: flex;
@@ -29,8 +29,8 @@
   width: 340px;
   height: 460px;
   background: white;
-  border-radius: 20px;
-  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.25);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -38,7 +38,7 @@
 }
 
 .chat-panel-header {
-  background: #0f172a;
+  background: var(--color-dark);
   color: white;
   padding: 16px 20px;
   display: flex;
@@ -54,13 +54,13 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-  background: #f8fafc;
+  background: var(--color-bg-alt);
 }
 
 .chat-bubble {
   max-width: 85%;
   padding: 10px 14px;
-  border-radius: 14px;
+  border-radius: var(--radius-md);
   font-size: 14px;
   line-height: 1.5;
   white-space: pre-wrap;
@@ -68,12 +68,12 @@
 
 .chat-bubble.assistant {
   background: white;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--color-border);
   align-self: flex-start;
 }
 
 .chat-bubble.user {
-  background: #6366f1;
+  background: var(--color-primary);
   color: white;
   align-self: flex-end;
 }
@@ -82,23 +82,48 @@
   display: flex;
   gap: 8px;
   padding: 12px;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--color-border);
 }
 
 .chat-panel-input input {
   flex: 1;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
+  min-width: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
   padding: 10px 14px;
   outline: none;
   font-size: 14px;
 }
 
+.chat-panel-input input:focus {
+  border-color: var(--color-primary);
+}
+
 .chat-panel-input button {
   width: 42px;
+  flex-shrink: 0;
   border: none;
-  border-radius: 12px;
-  background: #6366f1;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary);
   color: white;
   cursor: pointer;
+}
+
+/* RESPONSIVE */
+
+@media (max-width: 480px) {
+  .chat-fab {
+    bottom: 16px;
+    right: 16px;
+  }
+
+  .chat-panel {
+    bottom: 0;
+    right: 0;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 0;
+  }
 }
