@@ -1,64 +1,79 @@
 // ConflictDetection.jsx
 
 import "../styles/conflictDetection.css";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Sidebar from "../components/Sidebar";
+import emploisDuTempsApi from "../api/emploisDuTemps";
 import {
   FaExclamationTriangle,
-  FaCheckCircle,
   FaClock,
+  FaShieldAlt,
   FaChalkboardTeacher,
   FaDoorOpen,
   FaUsers,
   FaRobot,
   FaSearch,
-  FaFilter,
   FaSyncAlt,
-  FaBolt,
 } from "react-icons/fa";
 
-const conflictsData = [
-  {
-    id: 1,
-    type: "Conflit Salle",
-    severity: "Critique",
-    room: "B12",
-    teacher: "M. Karim",
-    group: "GI2",
-    time: "Lundi 10:00 - 12:00",
-  },
-  {
-    id: 2,
-    type: "Conflit Enseignant",
-    severity: "Moyen",
-    room: "A03",
-    teacher: "Mme Sara",
-    group: "GI1",
-    time: "Mardi 14:00 - 16:00",
-  },
-  {
-    id: 3,
-    type: "Conflit Groupe",
-    severity: "Faible",
-    room: "C22",
-    teacher: "M. Yassine",
-    group: "GI3",
-    time: "Jeudi 08:00 - 10:00",
-  },
-];
+function SeanceSummary({ seance }) {
+  return (
+    <>
+      <p><FaDoorOpen /> Salle : {seance.salle?.nom}</p>
+      <p><FaChalkboardTeacher /> Enseignant : {seance.formateur?.prenom} {seance.formateur?.nom}</p>
+      <p><FaUsers /> Groupe : {seance.groupe?.nom}</p>
+      <p><FaClock /> {seance.jour} {seance.heure_debut?.slice(0, 5)} - {seance.heure_fin?.slice(0, 5)} ({seance.module?.nom})</p>
+    </>
+  );
+}
 
 export default function ConflictDetection() {
+  const [conflicts, setConflicts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [search, setSearch] = useState("");
 
-  const filteredConflicts = conflictsData.filter((conflict) =>
-    conflict.type.toLowerCase().includes(search.toLowerCase())
+  const [suggestions, setSuggestions] = useState("");
+  const [analyzing, setAnalyzing] = useState(false);
+
+  const loadConflicts = () => {
+    setLoading(true);
+    setError("");
+    return emploisDuTempsApi
+      .getConflicts()
+      .then(setConflicts)
+      .catch(() => setError("Impossible d'analyser l'emploi du temps."))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    loadConflicts();
+  }, []);
+
+  const filteredConflicts = conflicts.filter((c) =>
+    c.type.toLowerCase().includes(search.toLowerCase())
   );
+
+  const countBySeverity = (s) => conflicts.filter((c) => c.severity === s).length;
+
+  const handleAnalyze = async () => {
+    setAnalyzing(true);
+    setSuggestions("");
+    try {
+      const { suggestions: text } = await emploisDuTempsApi.analyzeConflicts(conflicts);
+      setSuggestions(text);
+    } catch {
+      setSuggestions("Erreur lors de l'analyse IA.");
+    } finally {
+      setAnalyzing(false);
+    }
+  };
 
   return (
     <div className="dashboard">
-            <Sidebar role="admin" />
+            <Sidebar />
     <div className="conflict-page">
-      
+
 
       {/* MAIN */}
       <main className="main-content">
@@ -66,21 +81,23 @@ export default function ConflictDetection() {
         <div className="topbar">
           <div>
             <h1>Détection de Conflits</h1>
-            <p>Analyse intelligente des conflits d'emploi du temps</p>
+            <p>Analyse de l'emploi du temps pour détecter les chevauchements</p>
           </div>
 
           <div className="topbar-actions">
-            <button className="scan-btn">
+            <button className="scan-btn" onClick={loadConflicts} disabled={loading}>
               <FaSyncAlt />
-              Analyser
+              {loading ? "Analyse..." : "Analyser"}
             </button>
 
-            <button className="resolve-btn">
-              <FaBolt />
-              Résolution Auto
+            <button className="resolve-btn" onClick={handleAnalyze} disabled={analyzing || conflicts.length === 0}>
+              <FaRobot />
+              {analyzing ? "Analyse IA..." : "Suggestions IA"}
             </button>
           </div>
         </div>
+
+        {error && <p style={{ color: "#dc2626" }}>{error}</p>}
 
         {/* STATS */}
         <div className="stats-grid">
@@ -90,8 +107,8 @@ export default function ConflictDetection() {
             </div>
 
             <div>
-              <h2>12</h2>
-              <p>Conflits critiques</p>
+              <h2>{countBySeverity("Critique")}</h2>
+              <p>Conflits critiques (salle)</p>
             </div>
           </div>
 
@@ -101,19 +118,19 @@ export default function ConflictDetection() {
             </div>
 
             <div>
-              <h2>7</h2>
-              <p>Conflits moyens</p>
+              <h2>{countBySeverity("Moyen")}</h2>
+              <p>Conflits moyens (enseignant)</p>
             </div>
           </div>
 
           <div className="stat-card resolved">
             <div className="stat-icon">
-              <FaCheckCircle />
+              <FaShieldAlt />
             </div>
 
             <div>
-              <h2>31</h2>
-              <p>Résolus automatiquement</p>
+              <h2>{countBySeverity("Faible")}</h2>
+              <p>Conflits faibles (groupe)</p>
             </div>
           </div>
 
@@ -123,8 +140,8 @@ export default function ConflictDetection() {
             </div>
 
             <div>
-              <h2>92%</h2>
-              <p>Optimisation IA</p>
+              <h2>{conflicts.length}</h2>
+              <p>Total conflits</p>
             </div>
           </div>
         </div>
@@ -140,11 +157,6 @@ export default function ConflictDetection() {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-
-          <button className="filter-btn">
-            <FaFilter />
-            Filtres
-          </button>
         </div>
 
         {/* CONFLICTS */}
@@ -154,6 +166,12 @@ export default function ConflictDetection() {
             <div className="section-title">
               <h2>Conflits détectés</h2>
             </div>
+
+            {loading && <p>Analyse en cours...</p>}
+
+            {!loading && filteredConflicts.length === 0 && (
+              <p>Aucun conflit détecté. L'emploi du temps est cohérent. ✅</p>
+            )}
 
             {filteredConflicts.map((conflict) => (
               <div className="conflict-card" key={conflict.id}>
@@ -166,27 +184,10 @@ export default function ConflictDetection() {
                 </div>
 
                 <div className="conflict-info">
-                  <p>
-                    <FaDoorOpen /> Salle : {conflict.room}
-                  </p>
-
-                  <p>
-                    <FaChalkboardTeacher /> Enseignant :{" "}
-                    {conflict.teacher}
-                  </p>
-
-                  <p>
-                    <FaUsers /> Groupe : {conflict.group}
-                  </p>
-
-                  <p>
-                    <FaClock /> {conflict.time}
-                  </p>
-                </div>
-
-                <div className="conflict-actions">
-                  <button className="fix-btn">Corriger</button>
-                  <button className="ignore-btn">Ignorer</button>
+                  <p style={{ fontWeight: 600 }}>Séance 1 :</p>
+                  <SeanceSummary seance={conflict.seance_a} />
+                  <p style={{ fontWeight: 600, marginTop: 10 }}>Séance 2 :</p>
+                  <SeanceSummary seance={conflict.seance_b} />
                 </div>
               </div>
             ))}
@@ -196,38 +197,22 @@ export default function ConflictDetection() {
           <div className="recommendation-panel">
             <h2>Suggestions IA</h2>
 
-            <div className="recommendation-card">
-              <FaRobot className="robot-icon" />
+            {!suggestions && !analyzing && (
+              <p style={{ color: "#64748b" }}>
+                Cliquez sur "Suggestions IA" pour obtenir des recommandations de résolution.
+              </p>
+            )}
 
-              <div>
-                <h3>Changer de salle</h3>
-                <p>
-                  Déplacer GI2 vers salle C14 disponible à la même heure.
-                </p>
+            {analyzing && <p>Génération des suggestions...</p>}
+
+            {suggestions && (
+              <div className="recommendation-card">
+                <FaRobot className="robot-icon" />
+                <div>
+                  <p style={{ whiteSpace: "pre-wrap" }}>{suggestions}</p>
+                </div>
               </div>
-            </div>
-
-            <div className="recommendation-card">
-              <FaRobot className="robot-icon" />
-
-              <div>
-                <h3>Décaler le cours</h3>
-                <p>
-                  Déplacer le module Réseau de 14h à 16h pour éviter le conflit.
-                </p>
-              </div>
-            </div>
-
-            <div className="recommendation-card">
-              <FaRobot className="robot-icon" />
-
-              <div>
-                <h3>Optimisation automatique</h3>
-                <p>
-                  5 conflits peuvent être corrigés automatiquement.
-                </p>
-              </div>
-            </div>
+            )}
           </div>
         </div>
       </main>

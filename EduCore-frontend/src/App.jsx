@@ -20,23 +20,24 @@ import Settings from "./pages/Settings";
 
 
 import ProtectedRoute from "./components/ProtectedRoute";
+import ChatWidget from "./components/ChatWidget";
 
 import "./styles/global.css";
 
 function App() {
 
   const location = useLocation();
+  const isPublicPage =
+    location.pathname === "/" ||
+    location.pathname === "/login" ||
+    location.pathname === "/register";
 
   return (
     <>
 
       {/* HIDE NAVBAR ON HOME, LOGIN & REGISTER */}
-      {
-        location.pathname !== "/" &&
-        location.pathname !== "/login" &&
-        location.pathname !== "/register" &&
-        <Navbar />
-      }
+      {!isPublicPage && <Navbar />}
+      {!isPublicPage && <ChatWidget />}
 
       <Routes>
 

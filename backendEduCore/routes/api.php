@@ -70,11 +70,22 @@ Route::middleware('auth:api')->group(function () {
     });
 
     // Emplois du temps — everyone reads, admin writes
-    Route::apiResource('emplois-du-temps', EmploiDuTempsController::class)->only(['index', 'show']);
+    // NOTE: literal sub-paths (conflicts, generate-ia, bulk) must be registered
+    // before the apiResource's {emploiDuTemps} show route, or Laravel will try
+    // to resolve them as a route-model-binding id instead.
     Route::middleware('role:admin')->group(function () {
-        Route::apiResource('emplois-du-temps', EmploiDuTempsController::class)->only(['store', 'update', 'destroy']);
+        Route::get('emplois-du-temps/conflicts', [EmploiDuTempsController::class, 'conflicts']);
+        Route::post('emplois-du-temps/conflicts/analyze', [EmploiDuTempsController::class, 'analyzeConflicts']);
         Route::post('emplois-du-temps/generate-ia', [EmploiDuTempsController::class, 'generateIA']);
         Route::post('emplois-du-temps/bulk', [EmploiDuTempsController::class, 'bulkStore']);
+    });
+    Route::apiResource('emplois-du-temps', EmploiDuTempsController::class)
+        ->parameters(['emplois-du-temps' => 'emploiDuTemps'])
+        ->only(['index', 'show']);
+    Route::middleware('role:admin')->group(function () {
+        Route::apiResource('emplois-du-temps', EmploiDuTempsController::class)
+            ->parameters(['emplois-du-temps' => 'emploiDuTemps'])
+            ->only(['store', 'update', 'destroy']);
     });
 
     // Fichiers — everyone reads, admin + formateur upload/delete, anyone may request an AI résumé

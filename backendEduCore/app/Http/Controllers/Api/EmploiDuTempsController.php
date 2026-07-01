@@ -141,6 +141,47 @@ class EmploiDuTempsController extends Controller
         return response()->json(['draft' => $draft]);
     }
 
+    // GET /api/emplois-du-temps/conflicts — deterministic scan of the whole schedule for overlaps.
+    public function conflicts(ScheduleConflictService $conflicts)
+    {
+        return response()->json($conflicts->findAllConflicts());
+    }
+
+    // POST /api/emplois-du-temps/conflicts/analyze — ask Gemini to suggest resolutions for given conflicts.
+    public function analyzeConflicts(Request $request, GeminiClient $gemini)
+    {
+        $conflicts = $request->input('conflicts', []);
+
+        if (empty($conflicts)) {
+            return response()->json(['suggestions' => "Aucun conflit à analyser."]);
+        }
+
+        $summary = collect($conflicts)->map(function ($c) {
+            $a = $c['seance_a'] ?? [];
+            $b = $c['seance_b'] ?? [];
+            return "- {$c['type']} ({$c['severity']}) le {$c['jour']} : "
+                . "\"{$a['module']['nom']}\" ({$a['heure_debut']}-{$a['heure_fin']}, salle {$a['salle']['nom']}, formateur {$a['formateur']['prenom']} {$a['formateur']['nom']}, groupe {$a['groupe']['nom']}) "
+                . "chevauche \"{$b['module']['nom']}\" ({$b['heure_debut']}-{$b['heure_fin']}, salle {$b['salle']['nom']}, formateur {$b['formateur']['prenom']} {$b['formateur']['nom']}, groupe {$b['groupe']['nom']})";
+        })->implode("\n");
+
+        $prompt = <<<PROMPT
+        Voici une liste de conflits détectés dans un emploi du temps d'un établissement de formation professionnelle (OFPPT) :
+
+        {$summary}
+
+        Pour chaque conflit, propose une solution concrète et courte (changer de salle, décaler l'horaire, etc.).
+        Réponds en français, sous forme de liste à puces concise.
+        PROMPT;
+
+        try {
+            $suggestions = $gemini->generate($prompt, "Tu es un assistant pédagogique pour l'OFPPT, expert en planification d'emplois du temps.");
+        } catch (Throwable $e) {
+            return response()->json(['message' => 'Erreur lors de l\'analyse IA'], 500);
+        }
+
+        return response()->json(['suggestions' => $suggestions]);
+    }
+
     // POST /api/emplois-du-temps/bulk — persists a reviewed batch of séances (e.g. an accepted AI draft).
     public function bulkStore(Request $request)
     {

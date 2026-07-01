@@ -1,73 +1,99 @@
 // src/pages/GenerationIA.jsx
 
+import { useEffect, useState } from "react";
 import "../styles/generationIA.css";
 import Sidebar from "../components/Sidebar";
+import groupesApi from "../api/groupes";
+import modulesApi from "../api/modules";
+import sallesApi from "../api/salles";
+import emploisDuTempsApi from "../api/emploisDuTemps";
 
 import {
   FaMagic,
-  FaHistory,
   FaUsers,
   FaBook,
   FaChalkboardTeacher,
   FaDoorOpen,
-  FaCalendarAlt,
   FaShieldAlt,
-  FaClock,
-  FaFilePdf,
   FaSave,
-  FaSlidersH,
-  FaList
 } from "react-icons/fa";
 
+const JOURS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
+
 export default function GenerationIA() {
-  const timetable = [
-    {
-      time: "08:00\n09:30",
-      monday: "Algorithmique\nSalle A101\nM. Ahmed",
-      tuesday: "Base de données\nSalle A102\nM. Karim",
-      wednesday: "Réseaux\nSalle B201\nM. Youssef",
-      thursday: "Algorithmique\nSalle A101\nM. Ahmed",
-      friday: "Anglais\nSalle C203\nMme. Sara"
-    },
-    {
-      time: "09:30\n11:00",
-      monday: "Base de données\nSalle A102\nM. Karim",
-      tuesday: "Algorithmique\nSalle A101\nM. Ahmed",
-      wednesday: "Programmation\nTP1\nM. Sami",
-      thursday: "Base de données\nSalle A102\nM. Karim",
-      friday: "Réseaux\nSalle B201\nM. Youssef"
-    },
-    {
-      time: "11:15\n12:45",
-      monday: "Réseaux\nSalle B201\nM. Youssef",
-      tuesday: "Programmation\nTP1\nM. Sami",
-      wednesday: "Base de données\nSalle A102\nM. Karim",
-      thursday: "Réseaux\nSalle B201\nM. Youssef",
-      friday: "Algorithmique\nSalle A101\nM. Ahmed"
-    },
-    {
-      time: "13:45\n15:15",
-      monday: "Programmation\nTP1\nM. Sami",
-      tuesday: "Réseaux\nSalle B201\nM. Youssef",
-      wednesday: "Algorithmique\nSalle A101\nM. Ahmed",
-      thursday: "Anglais\nSalle C203\nMme. Sara",
-      friday: "Base de données\nSalle A102\nM. Karim"
-    },
-    {
-      time: "15:30\n17:00",
-      monday: "Anglais\nSalle C203\nMme. Sara",
-      tuesday: "Algorithmique\nSalle A101\nM. Ahmed",
-      wednesday: "Réseaux\nSalle B201\nM. Youssef",
-      thursday: "Programmation\nTP1\nM. Sami",
-      friday: ""
+  const [groupes, setGroupes] = useState([]);
+  const [modules, setModules] = useState([]);
+  const [salles, setSalles] = useState([]);
+  const [selectedGroupeId, setSelectedGroupeId] = useState("");
+
+  const [draft, setDraft] = useState(null);
+  const [included, setIncluded] = useState({});
+  const [generating, setGenerating] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    Promise.all([groupesApi.list(), modulesApi.list(), sallesApi.list()])
+      .then(([groupesData, modulesData, sallesData]) => {
+        setGroupes(groupesData);
+        setModules(modulesData);
+        setSalles(sallesData);
+        if (groupesData[0]) setSelectedGroupeId(String(groupesData[0].id));
+      })
+      .catch(() => setError("Impossible de charger les données."));
+  }, []);
+
+  const selectedGroupe = groupes.find((g) => String(g.id) === String(selectedGroupeId));
+  const modulesForGroupe = selectedGroupe ? modules.filter((m) => m.filiere_id === selectedGroupe.filiere_id) : [];
+  const sallesDisponibles = salles.filter((s) => s.statut === "disponible");
+
+  const handleGenerate = async () => {
+    setGenerating(true);
+    setError("");
+    setDraft(null);
+    setSaved(false);
+    try {
+      const { draft: proposals } = await emploisDuTempsApi.generateIA(selectedGroupeId);
+      setDraft(proposals);
+      const defaults = {};
+      proposals.forEach((p, i) => { defaults[i] = !p.has_conflict; });
+      setIncluded(defaults);
+    } catch (err) {
+      setError(err.response?.data?.message || "Erreur lors de la génération IA.");
+    } finally {
+      setGenerating(false);
     }
-  ];
+  };
+
+  const handleSave = async () => {
+    const seances = draft.filter((_, i) => included[i]);
+    if (seances.length === 0) return;
+    setSaving(true);
+    setError("");
+    try {
+      await emploisDuTempsApi.bulkCreate(seances);
+      setSaved(true);
+      setDraft(null);
+    } catch (err) {
+      const errors = err.response?.data?.errors;
+      setError(errors ? Object.values(errors).flat().join(" ") : "Erreur lors de l'enregistrement.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const findModule = (id) => modules.find((m) => m.id === id);
+  const findSalle = (id) => salles.find((s) => s.id === id);
+
+  const conflictCount = draft ? draft.filter((p) => p.has_conflict).length : 0;
+  const includedCount = draft ? draft.filter((_, i) => included[i]).length : 0;
 
   return (
     <div className="dashboard">
-      <Sidebar role="admin" />
+      <Sidebar />
     <div className="layout">
-      
+
       <div className="generation-page">
         <div className="generation-top">
           <div>
@@ -78,240 +104,82 @@ export default function GenerationIA() {
             <div className="title-row">
               <FaMagic className="title-icon" />
               <div>
-                <h1>Génération d’emplois IA</h1>
+                <h1>Génération d'emplois IA</h1>
                 <p>
-                  Générez automatiquement des emplois du temps optimisés grâce
-                  à l’intelligence artificielle
+                  Générez automatiquement une proposition d'emploi du temps
+                  pour un groupe grâce à l'intelligence artificielle (Gemini)
                 </p>
               </div>
             </div>
           </div>
-
-          <button className="history-btn">
-            <FaHistory />
-            Historique des générations
-          </button>
         </div>
+
+        {error && <p style={{ color: "#dc2626" }}>{error}</p>}
 
         <div className="generation-grid">
           {/* LEFT */}
           <div className="left-column">
             <div className="card">
-              <h3>1. Sélection des données</h3>
+              <h3>1. Sélection du groupe</h3>
 
               <div className="form-group">
-                <label>Filière</label>
-                <select>
-                  <option>Informatique</option>
+                <label>Groupe</label>
+                <select value={selectedGroupeId} onChange={(e) => setSelectedGroupeId(e.target.value)}>
+                  {groupes.map((g) => (
+                    <option key={g.id} value={g.id}>{g.filiere?.nom} — {g.nom}</option>
+                  ))}
                 </select>
               </div>
 
               <div className="form-group">
-                <label>Semestre</label>
-                <select>
-                  <option>Semestre 2</option>
-                </select>
-              </div>
+                <label>Aperçu des données disponibles</label>
 
-              <div className="form-group">
-                <label>Groupes</label>
+                <div className="stats-grid">
+                  <div className="stat-card">
+                    <FaBook />
+                    <h2>{modulesForGroupe.length}</h2>
+                    <p>Modules</p>
+                  </div>
 
-                <div className="tags">
-                  <span>Groupe 1 ×</span>
-                  <span>Groupe 2 ×</span>
-                  <span>Groupe 3 ×</span>
+                  <div className="stat-card">
+                    <FaChalkboardTeacher />
+                    <h2>{new Set(modulesForGroupe.map((m) => m.formateur_id)).size}</h2>
+                    <p>Formateurs</p>
+                  </div>
+
+                  <div className="stat-card">
+                    <FaDoorOpen />
+                    <h2>{sallesDisponibles.length}</h2>
+                    <p>Salles disponibles</p>
+                  </div>
                 </div>
-              </div>
-
-              <div className="form-group">
-                <label>Période</label>
-                <input type="text" value="03/06/2024 - 28/06/2024" readOnly />
-              </div>
-
-              <div className="form-group">
-                <label>Salles disponibles</label>
-
-                <div className="tags">
-                  <span>Salle A101 ×</span>
-                  <span>Salle A102 ×</span>
-                  <span>Salle B201 ×</span>
-                  <span>Salle TP1 ×</span>
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label>Enseignants (optionnel)</label>
-                <select>
-                  <option>Sélectionner des enseignants</option>
-                </select>
               </div>
             </div>
 
-            <div className="card">
-              <h3>Contraintes spécifiques</h3>
-
-              <div className="checkboxes">
-                <label>
-                  <input type="checkbox" checked readOnly />
-                  Éviter les conflits d’enseignants
-                </label>
-
-                <label>
-                  <input type="checkbox" checked readOnly />
-                  Éviter les conflits de salles
-                </label>
-
-                <label>
-                  <input type="checkbox" checked readOnly />
-                  Équilibrer la charge par jour
-                </label>
-
-                <label>
-                  <input type="checkbox" />
-                  Limiter les trous (créneaux vides)
-                </label>
-
-                <label>
-                  <input type="checkbox" />
-                  Prioriser les cours du matin
-                </label>
-              </div>
-            </div>
-
-            
-          </div>
-
-          {/* CENTER */}
-          <div className="center-column">
-            <div className="card">
-              <h3>2. Configuration IA</h3>
-
-              <div className="form-group">
-                <label>Objectif principal</label>
-                <select>
-                  <option>Équilibrer les journées</option>
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label>Niveau d’optimisation</label>
-                <input type="range" />
-              </div>
-
-              <div className="form-group">
-                <label>Heures max par jour</label>
-                <select>
-                  <option>6</option>
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label>Priorité des types de cours</label>
-
-                <div className="priority-buttons">
-                  <button className="active">TP &gt; TD &gt; CM</button>
-                  <button>TP &gt; CM &gt; TD</button>
-                  <button>CM &gt; TD &gt; TP</button>
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label>Tolérance pour les trous</label>
-                <select>
-                  <option>Faible</option>
-                </select>
-              </div>
-
-              <div className="toggle-row">
-                <span>Activer l’optimisation avancée</span>
-
-                <div className="toggle active"></div>
-              </div>
-            </div>
-
-            <div className="card">
-              <h3>Aperçu des données</h3>
-
-              <div className="stats-grid">
-                <div className="stat-card">
-                  <FaUsers />
-                  <h2>3</h2>
-                  <p>Groupes</p>
-                </div>
-
-                <div className="stat-card">
-                  <FaBook />
-                  <h2>24</h2>
-                  <p>Modules</p>
-                </div>
-
-                <div className="stat-card">
-                  <FaChalkboardTeacher />
-                  <h2>18</h2>
-                  <p>Enseignants</p>
-                </div>
-
-                <div className="stat-card">
-                  <FaDoorOpen />
-                  <h2>8</h2>
-                  <p>Salles</p>
-                </div>
-
-                <div className="stat-card">
-                  <FaCalendarAlt />
-                  <h2>120</h2>
-                  <p>Créneaux</p>
-                </div>
-
-                <div className="stat-card">
-                  <FaClock />
-                  <h2>6</h2>
-                  <p>Semaines</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-        </div>
-        {/* ------- */}
-
-        <button className="generate-btn">
+            <button className="generate-btn" onClick={handleGenerate} disabled={generating || !selectedGroupeId || modulesForGroupe.length === 0}>
               <FaMagic />
-              GÉNÉRER L’EMPLOI DU TEMPS IA
+              {generating ? "GÉNÉRATION EN COURS..." : "GÉNÉRER L'EMPLOI DU TEMPS IA"}
             </button>
 
             <p className="ai-note">
-              L’IA va analyser les données et générer un emploi du temps
-              optimisé.
+              L'IA propose un emploi du temps ; les créneaux en conflit avec
+              l'existant sont automatiquement détectés et décochés.
             </p>
-         {/* RIGHT */}
+
+            {saved && <p style={{ color: "#16a34a", fontWeight: 600 }}>Emploi du temps enregistré avec succès ✅</p>}
+          </div>
+
+          {/* RIGHT */}
           <div className="right-column">
+            {draft && (
             <div className="card preview-card">
               <div className="preview-top">
                 <div>
-                  <h3>3. Aperçu du résultat généré</h3>
+                  <h3>2. Aperçu du résultat généré</h3>
                 </div>
 
                 <div className="success-badge">
-                  Généré avec succès
-                </div>
-              </div>
-
-              <div className="preview-controls">
-                <select>
-                  <option>Groupe 1</option>
-                </select>
-
-                <div className="view-buttons">
-                  <button className="active">
-                    <FaList />
-                    Aperçu semaine
-                  </button>
-
-                  <button>
-                    <FaSlidersH />
-                    Aperçu complet
-                  </button>
+                  {draft.length} créneau(x) proposé(s)
                 </div>
               </div>
 
@@ -320,53 +188,40 @@ export default function GenerationIA() {
                   <thead>
                     <tr>
                       <th></th>
-                      <th>Lun.</th>
-                      <th>Mar.</th>
-                      <th>Mer.</th>
-                      <th>Jeu.</th>
-                      <th>Ven.</th>
-                      <th>Sam.</th>
+                      {JOURS.map((j) => <th key={j}>{j.slice(0, 3)}.</th>)}
                     </tr>
                   </thead>
 
                   <tbody>
-                    {timetable.map((row, index) => (
-                      <tr key={index}>
-                        <td className="time">{row.time}</td>
-
-                        <td>
-                          <div className="course blue">
-                            {row.monday}
-                          </div>
-                        </td>
-
-                        <td>
-                          <div className="course green">
-                            {row.tuesday}
-                          </div>
-                        </td>
-
-                        <td>
-                          <div className="course yellow">
-                            {row.wednesday}
-                          </div>
-                        </td>
-
-                        <td>
-                          <div className="course blue">
-                            {row.thursday}
-                          </div>
-                        </td>
-
-                        <td>
-                          <div className="course pink">
-                            {row.friday}
-                          </div>
-                        </td>
-
-                        <td></td>
-                      </tr>
-                    ))}
+                    {[...new Set(draft.map((p) => `${p.heure_debut}-${p.heure_fin}`))].sort().map((slotKey) => {
+                      const [hd, hf] = slotKey.split("-");
+                      return (
+                        <tr key={slotKey}>
+                          <td className="time">{hd}{"\n"}{hf}</td>
+                          {JOURS.map((jour) => {
+                            const idx = draft.findIndex((p) => p.jour === jour && p.heure_debut === hd && p.heure_fin === hf);
+                            const p = idx >= 0 ? draft[idx] : null;
+                            return (
+                              <td key={jour}>
+                                {p && (
+                                  <label className={`course ${p.has_conflict ? "pink" : "green"}`} style={{ display: "block", cursor: "pointer" }}>
+                                    <input
+                                      type="checkbox"
+                                      checked={!!included[idx]}
+                                      onChange={(e) => setIncluded({ ...included, [idx]: e.target.checked })}
+                                      style={{ marginRight: 6 }}
+                                    />
+                                    {findModule(p.module_id)?.nom}
+                                    {"\n"}{findSalle(p.salle_id)?.nom}
+                                    {p.has_conflict && "\n⚠ conflit"}
+                                  </label>
+                                )}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -374,48 +229,25 @@ export default function GenerationIA() {
               <div className="bottom-stats">
                 <div>
                   <FaShieldAlt />
-                  <span>0 conflits</span>
+                  <span>{conflictCount} conflit(s) détecté(s)</span>
                 </div>
 
                 <div>
-                  <FaDoorOpen />
-                  <span>92% occupation</span>
-                </div>
-
-                <div>
-                  <FaCalendarAlt />
-                  <span>96% remplissage</span>
-                </div>
-
-                <div>
-                  <FaClock />
-                  <span>4% trous</span>
+                  <FaUsers />
+                  <span>{includedCount} créneau(x) sélectionné(s)</span>
                 </div>
               </div>
 
               <div className="bottom-actions">
-                <button>
-                  <FaMagic />
-                  Optimiser
-                </button>
-
-                <button>
-                  <FaList />
-                  Voir les détails
-                </button>
-
-                <button>
-                  <FaFilePdf />
-                  Exporter PDF
-                </button>
-
-                <button className="save-btn">
+                <button className="save-btn" onClick={handleSave} disabled={saving || includedCount === 0}>
                   <FaSave />
-                  Enregistrer l’emploi
+                  {saving ? "Enregistrement..." : "Enregistrer l'emploi"}
                 </button>
               </div>
             </div>
+            )}
           </div>
+        </div>
       </div>
     </div>
     </div>
