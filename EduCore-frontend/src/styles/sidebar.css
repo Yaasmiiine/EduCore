@@ -1,0 +1,85 @@
+/* SIDEBAR */
+/* SIDEBAR */
+.sidebar {
+  width: 250px;
+  height: 100vh; /* full screen height */
+  position: sticky; /* keeps sidebar fixed while scrolling */
+  top: 0;
+
+  background: linear-gradient(180deg, #0f172a, #1e293b);
+  color: #cbd5f5;
+
+  padding: 20px 15px;
+
+  display: flex;
+  flex-direction: column;
+
+  overflow-y: auto; /* sidebar scroll if content too long */
+  flex-shrink: 0; /* prevents shrinking */
+}
+
+/* LOGO */
+.logo {
+  font-size: 20px;
+  font-weight: bold;
+  color: white;
+  margin-bottom: 25px;
+}
+
+/* SECTION TITLE */
+.section-title {
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: #64748b;
+  margin: 20px 10px 8px;
+}
+
+/* MENU */
+.menu {
+  list-style: none;
+}
+
+.menu li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  margin: 4px 0;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: 0.2s;
+  font-size: 14px;
+  color: #cbd5f5;
+}
+.menu a{
+  text-decoration:none;
+  color:inherit;
+}
+
+.menu a.active li{
+  background:#6366f1;
+  color:white;
+}
+
+/* ICON */
+.menu li svg {
+  font-size: 14px;
+}
+
+/* HOVER */
+.menu li:hover {
+  background: rgba(99, 102, 241, 0.15);
+  color: white;
+}
+
+/* ACTIVE */
+.menu .active {
+  background: #6366f1;
+  color: white;
+  font-weight: 500;
+}
+
+/* ACTIVE ICON */
+.menu .active svg {
+  color: white;
+}

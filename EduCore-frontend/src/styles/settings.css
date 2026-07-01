@@ -1,0 +1,285 @@
+.settings-page{
+     flex: 1;
+  padding: 30px;
+  background: #f5f7fb;
+  min-height: 100vh;
+}
+
+.page-header{
+    margin-bottom:30px;
+}
+
+.page-header h1{
+    font-size:40px;
+    font-weight:700;
+    color:#111827;
+}
+
+.page-header p{
+    margin-top:8px;
+    color:#6b7280;
+    font-size:16px;
+}
+
+.settings-card{
+    background:white;
+    border-radius:22px;
+    padding:32px;
+    margin-bottom:28px;
+    box-shadow:0 10px 35px rgba(15,23,42,.05);
+}
+
+.card-header{
+    display:flex;
+    align-items:center;
+    gap:18px;
+    margin-bottom:30px;
+}
+
+.card-icon{
+    width:62px;
+    height:62px;
+    border-radius:18px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:white;
+    font-size:24px;
+}
+
+.blue{
+    background:#2563eb;
+}
+
+.purple{
+    background:#7c3aed;
+}
+
+.card-header h2{
+    font-size:28px;
+    color:#111827;
+}
+
+.card-header p{
+    color:#6b7280;
+    margin-top:5px;
+}
+
+.form-grid{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:30px;
+}
+
+.form-group{
+    display:flex;
+    flex-direction:column;
+}
+
+.form-group label{
+    margin-bottom:10px;
+    font-weight:600;
+    color:#374151;
+}
+
+.form-group input,
+.form-group select{
+
+    height:55px;
+
+    border:1px solid #dbe3ee;
+
+    border-radius:14px;
+
+    padding:0 18px;
+
+    font-size:16px;
+
+    outline:none;
+
+    transition:.25s;
+}
+
+.form-group input:focus,
+.form-group select:focus{
+
+    border-color:#2563eb;
+
+}
+
+.notification-box{
+
+    height:90px;
+
+    border:1px solid #7d818678;
+
+    border-radius:18px;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:space-between;
+
+    padding:0 30px;
+
+    font-size:20px;
+
+}
+
+
+.toggle{
+
+    /* width:72px;
+
+    height:38px;
+
+    background:#d1d5db; 
+
+    border-radius:50px; */
+
+    cursor:pointer;
+
+    position:relative;
+
+    transition:.3s;
+
+}
+
+.toggle-circle{
+
+    /* width:30px;
+
+    height:30px; */
+
+    background:white;
+
+    border-radius:50%;
+
+    position:absolute;
+
+    left:4px;
+
+    top:4px;
+
+    transition:.3s;
+
+    box-shadow:0 2px 8px rgba(0,0,0,.2);
+
+}
+
+.toggle.active{
+
+    background:#2563eb;
+
+}
+
+.toggle.active .toggle-circle{
+
+    transform:translateX(34px);
+
+}
+
+.save-section{
+
+    display:flex;
+
+    justify-content:flex-end;
+
+    margin-top:30px;
+
+}
+
+.save-btn{
+
+    background:#2563eb;
+
+    color:white;
+
+    border:none;
+
+    height:58px;
+
+    padding:0 30px;
+
+    border-radius:16px;
+
+    display:flex;
+
+    align-items:center;
+
+    gap:12px;
+
+    font-size:16px;
+
+    font-weight:600;
+
+    cursor:pointer;
+
+    transition:.25s;
+
+}
+
+.save-btn:hover{
+
+    background:#1d4ed8;
+
+    transform:translateY(-2px);
+
+}
+
+@media(max-width:1100px){
+
+.form-grid{
+
+grid-template-columns:1fr;
+
+}
+
+}
+
+@media(max-width:768px){
+
+.settings-page{
+
+padding:20px;
+
+}
+
+.card-header{
+
+flex-direction:column;
+
+align-items:flex-start;
+
+}
+
+.notification-box{
+
+padding:20px;
+
+height:auto;
+
+gap:20px;
+
+flex-direction:column;
+
+align-items:flex-start;
+
+}
+
+.save-section{
+
+justify-content:center;
+
+}
+
+.save-btn{
+
+width:100%;
+
+justify-content:center;
+
+}
+
+}

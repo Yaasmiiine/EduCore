@@ -1,0 +1,12 @@
+:root {
+  --primary: #4F46E5;
+  --secondary: #6366F1;
+  --bg: #F9FAFB;
+  --text: #111827;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: var(--bg);
+}

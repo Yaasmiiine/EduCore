@@ -1,0 +1,303 @@
+/* conflictDetection.css */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Poppins", sans-serif;
+}
+
+body {
+  background: #f4f7fb;
+}
+
+.conflict-page {
+  flex: 1;
+  padding: 20px;
+  background: #f5f7fb;
+  min-height: 100vh;
+}
+
+
+/* MAIN */
+
+.main-content {
+  /* margin-left: 260px; */
+  padding: 30px;
+  /* width: calc(100% - 260px); */
+}
+
+/* TOPBAR */
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.topbar h1 {
+  font-size: 34px;
+  color: #0f172a;
+}
+
+.topbar p {
+  color: #64748b;
+  margin-top: 6px;
+}
+
+.topbar-actions {
+  display: flex;
+  gap: 15px;
+}
+
+.scan-btn,
+.resolve-btn {
+  border: none;
+  padding: 14px 22px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.scan-btn {
+  background: #2563eb;
+  color: white;
+}
+
+.resolve-btn {
+  background: linear-gradient(135deg, #7c3aed, #9333ea);
+  color: white;
+}
+
+.scan-btn:hover,
+.resolve-btn:hover {
+  transform: translateY(-2px);
+}
+
+/* STATS */
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.stat-card {
+  background: white;
+  border-radius: 22px;
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+}
+
+.stat-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  color: white;
+}
+.stat-icon svg{
+    color: white;
+}
+
+.critical .stat-icon {
+  background: #ef4444;
+}
+
+.medium .stat-icon {
+  background: #f59e0b;
+}
+
+.resolved .stat-icon {
+  background: #10b981;
+}
+
+.ai .stat-icon {
+  background: #7c3aed;
+}
+
+.stat-card h2 {
+  font-size: 28px;
+  margin-bottom: 5px;
+}
+
+.stat-card p {
+  color: #64748b;
+}
+
+/* FILTERS */
+
+.filters-section {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 30px;
+}
+
+.search-box {
+  background: white;
+  border-radius: 14px;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  width: 350px;
+  gap: 10px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+}
+
+.search-box input {
+  border: none;
+  outline: none;
+  width: 100%;
+  font-size: 15px;
+}
+
+.filter-btn {
+  border: none;
+  background: white;
+  padding: 14px 22px;
+  border-radius: 14px;
+  cursor: pointer;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+}
+
+/* CONFLICTS */
+
+.conflicts-container {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 25px;
+}
+
+.conflicts-list,
+.recommendation-panel {
+  background: white;
+  border-radius: 24px;
+  padding: 24px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+}
+
+.section-title h2,
+.recommendation-panel h2 {
+  margin-bottom: 20px;
+  color: #0f172a;
+}
+
+.conflict-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  padding: 20px;
+  margin-bottom: 20px;
+  transition: 0.3s;
+}
+
+.conflict-card:hover {
+  transform: translateY(-3px);
+}
+
+.conflict-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 15px;
+}
+
+.badge {
+  padding: 7px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.badge.critique {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.badge.moyen {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.badge.faible {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.conflict-type {
+  font-weight: 600;
+  color: #334155;
+}
+
+.conflict-info p {
+  margin-bottom: 12px;
+  color: #475569;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.conflict-actions {
+  display: flex;
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.fix-btn,
+.ignore-btn {
+  border: none;
+  padding: 12px 18px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.fix-btn {
+  background: #2563eb;
+  color: white;
+}
+
+.ignore-btn {
+  background: #f1f5f9;
+}
+
+/* RECOMMENDATIONS */
+
+.recommendation-card {
+  display: flex;
+  gap: 15px;
+  padding: 18px;
+  background: #f8fafc;
+  border-radius: 18px;
+  margin-bottom: 18px;
+}
+
+.robot-icon {
+  font-size: 24px;
+  color: #7c3aed;
+}
+
+.recommendation-card h3 {
+  margin-bottom: 6px;
+  color: #0f172a;
+}
+
+.recommendation-card p {
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1.5;
+}

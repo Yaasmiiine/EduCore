@@ -1,0 +1,110 @@
+{
+  "info": {
+    "name": "OFPPT API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:8000/api" },
+    { "key": "token", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/auth/register",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nom\": \"Test\",\n  \"prenom\": \"User\",\n  \"email\": \"test@ofppt.ma\",\n  \"password\": \"password123\",\n  \"role_id\": 1\n}"
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "event": [{ "listen": "test", "script": { "exec": ["pm.environment.set('token', pm.response.json().token);"] } }],
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/auth/login",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@ofppt.ma\",\n  \"password\": \"password123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Me",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/auth/me",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/auth/logout",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "item": [
+        {
+          "name": "Stats",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/dashboard",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        { "name": "List", "request": { "method": "GET", "url": "{{base_url}}/users", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }] } },
+        { "name": "Create", "request": { "method": "POST", "url": "{{base_url}}/users", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"nom\": \"Nouveau\",\n  \"prenom\": \"Formateur\",\n  \"email\": \"new@ofppt.ma\",\n  \"password\": \"password123\",\n  \"role_id\": 2\n}" } } },
+        { "name": "Show", "request": { "method": "GET", "url": "{{base_url}}/users/1", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }] } },
+        { "name": "Update", "request": { "method": "PUT", "url": "{{base_url}}/users/1", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"nom\": \"Updated\"\n}" } } },
+        { "name": "Delete", "request": { "method": "DELETE", "url": "{{base_url}}/users/1", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }] } }
+      ]
+    },
+    {
+      "name": "Filieres",
+      "item": [
+        { "name": "List", "request": { "method": "GET", "url": "{{base_url}}/filieres", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }] } },
+        { "name": "Create", "request": { "method": "POST", "url": "{{base_url}}/filieres", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"nom\": \"Développement Digital\",\n  \"code\": \"DD\",\n  \"description\": \"Filière développement web et mobile\"\n}" } } }
+      ]
+    },
+    {
+      "name": "Modules",
+      "item": [
+        { "name": "List", "request": { "method": "GET", "url": "{{base_url}}/modules", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }] } },
+        { "name": "Create", "request": { "method": "POST", "url": "{{base_url}}/modules", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"filiere_id\": 1,\n  \"formateur_id\": 2,\n  \"nom\": \"Développement Web\",\n  \"code\": \"DW101\",\n  \"description\": \"HTML, CSS, JavaScript\",\n  \"heures_total\": 120\n}" } } }
+      ]
+    },
+    {
+      "name": "Annonces",
+      "item": [
+        { "name": "List", "request": { "method": "GET", "url": "{{base_url}}/annonces", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }] } },
+        { "name": "Create", "request": { "method": "POST", "url": "{{base_url}}/annonces", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"titre\": \"Réunion pédagogique\",\n  \"contenu\": \"Réunion le lundi à 10h en salle B12\",\n  \"priorite\": \"importante\"\n}" } } }
+      ]
+    },
+    {
+      "name": "Emplois du temps",
+      "item": [
+        { "name": "List", "request": { "method": "GET", "url": "{{base_url}}/emplois-du-temps", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }] } },
+        { "name": "List by groupe", "request": { "method": "GET", "url": "{{base_url}}/emplois-du-temps?groupe_id=1", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }] } },
+        { "name": "Create", "request": { "method": "POST", "url": "{{base_url}}/emplois-du-temps", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"groupe_id\": 1,\n  \"module_id\": 1,\n  \"formateur_id\": 2,\n  \"salle\": \"A12\",\n  \"jour\": \"Lundi\",\n  \"heure_debut\": \"08:30\",\n  \"heure_fin\": \"11:30\"\n}" } } }
+      ]
+    }
+  ]
+}

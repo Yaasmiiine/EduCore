@@ -1,0 +1,397 @@
+.schedule-page {
+  flex:1;
+  width: 40%;
+  padding:30px;
+  background:#f8fafc;
+  min-height:100vh;
+}
+
+/* TOPBAR */
+
+.schedule-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+}
+
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.topbar-left h1 {
+  font-size: 36px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.menu-icon {
+  font-size: 24px;
+  color: #111827;
+}
+
+.notification {
+  position: relative;
+  font-size: 22px;
+  color: #111827;
+}
+
+.notification span {
+  position: absolute;
+  top: -8px;
+  right: -10px;
+  background: #7f5eff;
+  color: white;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* FILTERS */
+
+.schedule-filters {
+  background: white;
+  border-radius: 18px;
+  padding: 22px;
+  display: flex;
+  align-items: end;
+  gap: 18px;
+  margin-bottom: 22px;
+  border: 1px solid #e5e7eb;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.filter-group label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.filter-group select {
+  height: 50px;
+  min-width: 160px;
+  border-radius: 12px;
+  border: 1px solid #d1d5db;
+  padding: 0 14px;
+  font-size: 15px;
+  background: white;
+}
+
+.week-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.week-controls button {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  border: 1px solid #d1d5db;
+  background: white;
+}
+
+.today-btn {
+  width: auto !important;
+  padding: 0 20px;
+  color: #7f5eff;
+  font-weight: 600;
+}
+
+.add-btn {
+  margin-left: auto;
+  height: 52px;
+  padding: 0 24px;
+  border: none;
+  border-radius: 14px;
+  background: linear-gradient(
+    135deg,
+    #7f5eff
+  );
+  color: white;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 15px;
+}
+
+/* TABLE */
+
+.schedule-table-wrapper {
+  background: white;
+  border-radius: 18px;
+  border: 1px solid #e5e7eb;
+  overflow: hidden;
+}
+
+.schedule-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.schedule-table th {
+  padding: 15px 10px;
+  border-bottom: 1px solid #e5e7eb;
+  border-right: 1px solid #e5e7eb;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.schedule-table th span {
+  display: block;
+  margin-top: 8px;
+  font-size: 14px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.schedule-table td {
+  border-right: 1px solid #e5e7eb;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 10px;
+  vertical-align: top;
+}
+
+.time-cell {
+  width: 110px;
+  text-align: center;
+  font-weight: 700;
+  color: #374151;
+  font-size: 18px;
+}
+
+/* COURSE CARD */
+
+.course-card {
+  border-radius: 16px;
+  padding: 18px;
+  min-height: 120px;
+}
+
+.course-card h4 {
+  margin-bottom: 12px;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.course-card p {
+  margin-bottom: 12px;
+  font-size: 16px;
+}
+
+.course-card span {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+/* COLORS */
+
+.blue {
+  background: #eef4ff;
+}
+
+.blue h4,
+.blue span {
+  color: #7f5eff;
+}
+
+.green {
+  background: #edf9f0;
+}
+
+.green h4,
+.green span {
+  color: #166534;
+}
+
+.yellow {
+  background: #fff8e8;
+}
+
+.yellow h4,
+.yellow span {
+  color: #92400e;
+}
+
+.purple {
+  background: #f5efff;
+}
+
+.purple h4,
+.purple span {
+  color: #5b21b6;
+}
+
+.empty-slot {
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #9ca3af;
+  font-size: 30px;
+}
+
+/* FOOTER */
+
+.schedule-footer {
+  padding: 18px 24px;
+  color: #6b7280;
+  font-size: 15px;
+}
+
+/* MODAL */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.schedule-modal {
+  width: 700px;
+  background: white;
+  border-radius: 22px;
+  padding: 30px;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-header h2 {
+  font-size: 28px;
+}
+
+.modal-header button {
+  border: none;
+  background: none;
+  font-size: 24px;
+}
+
+.modal-tabs {
+  display: flex;
+  gap: 14px;
+  margin: 25px 0;
+}
+
+.modal-tabs button {
+  flex: 1;
+  height: 52px;
+  border-radius: 14px;
+  border: none;
+  background: #eef2ff;
+  font-weight: 600;
+}
+
+.modal-tabs .active {
+  background: #7f5eff;
+  color: white;
+}
+
+.modal-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.modal-grid select,
+textarea {
+  width: 100%;
+  border-radius: 14px;
+  border: 1px solid #d1d5db;
+  padding: 14px;
+  font-size: 15px;
+}
+
+textarea {
+  height: 120px;
+  margin-top: 18px;
+  resize: none;
+}
+
+.modal-actions {
+  margin-top: 25px;
+  display: flex;
+  justify-content: end;
+  gap: 14px;
+}
+
+.cancel-btn {
+  height: 48px;
+  padding: 0 24px;
+  border-radius: 12px;
+  border: 1px solid #d1d5db;
+  background: white;
+}
+
+.generate-btn {
+  height: 48px;
+  padding: 0 24px;
+  border-radius: 12px;
+  border: none;
+  background: #7f5eff;
+  color: white;
+  font-weight: 600;
+}
+
+.manual-content {
+  margin-top: 20px;
+}
+
+.manual-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px;
+}
+
+.manual-grid input {
+  height: 50px;
+  border-radius: 12px;
+  border: 1px solid #d1d5db;
+  padding: 0 14px;
+  font-size: 15px;
+}
+
+.add-slot-btn {
+  margin-top: 20px;
+  height: 48px;
+  padding: 0 20px;
+  border: none;
+  border-radius: 12px;
+  background: #7f5eff;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* REMOVE OLD ICON SPACING */
+
+.topbar-left {
+  display: flex;
+  align-items: center;
+}
+
+.topbar-left h1 {
+  font-size: 38px;
+  margin: 0;
+}
