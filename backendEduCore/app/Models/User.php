@@ -58,6 +58,13 @@ class User extends Authenticatable implements JWTSubject
         return $this->hasMany(EmploiDuTemps::class, 'formateur_id');
     }
 
+    // Named distinctly from Notifiable::notifications() (which targets Laravel's
+    // own morph-based notifications table) — this is our simple polling feed.
+    public function appNotifications()
+    {
+        return $this->hasMany(Notification::class);
+    }
+
     // Helpers
     public function isAdmin()
     {

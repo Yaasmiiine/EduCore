@@ -73,6 +73,50 @@ class AuthController extends Controller
         return response()->json(auth('api')->user()->load('role', 'groupe'));
     }
 
+    // PUT /api/profile — the authenticated user updates their own nom/prenom/email/photo.
+    public function updateProfile(Request $request)
+    {
+        $user = auth('api')->user();
+
+        $validator = Validator::make($request->all(), [
+            'nom'    => 'sometimes|string|max:100',
+            'prenom' => 'sometimes|string|max:100',
+            'email'  => 'sometimes|email|unique:users,email,' . $user->id,
+            'photo'  => 'nullable|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $user->update($request->only('nom', 'prenom', 'email', 'photo'));
+
+        return response()->json($user->load('role', 'groupe'));
+    }
+
+    // PUT /api/profile/password — the authenticated user changes their own password.
+    public function updatePassword(Request $request)
+    {
+        $user = auth('api')->user();
+
+        $validator = Validator::make($request->all(), [
+            'current_password' => 'required|string',
+            'password'          => 'required|string|min:6|confirmed',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        if (! Hash::check($request->current_password, $user->password)) {
+            return response()->json(['errors' => ['current_password' => ['Mot de passe actuel incorrect.']]], 422);
+        }
+
+        $user->update(['password' => Hash::make($request->password)]);
+
+        return response()->json(['message' => 'Mot de passe mis à jour avec succès']);
+    }
+
     // POST /api/auth/refresh
     public function refresh()
     {

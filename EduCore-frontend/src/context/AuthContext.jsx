@@ -31,6 +31,13 @@ export function AuthProvider({ children }) {
     setAuthState(null);
   }, []);
 
+  const updateUser = useCallback((user) => {
+    setAuthState((prev) => {
+      const newAuth = persistAuth({ token: prev.token, user });
+      return newAuth;
+    });
+  }, []);
+
   const value = {
     user: auth?.user ?? null,
     role: auth?.role ?? null,
@@ -39,6 +46,7 @@ export function AuthProvider({ children }) {
     login,
     register,
     logout,
+    updateUser,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

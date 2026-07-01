@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\SalleController;
 use App\Http\Controllers\Api\FichierController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\AiController;
+use App\Http\Controllers\Api\NotificationController;
 use App\Models\Role;
 use Illuminate\Support\Facades\Route;
 
@@ -35,6 +36,15 @@ Route::middleware('auth:api')->group(function () {
         Route::post('refresh', [AuthController::class, 'refresh']);
         Route::get('me',       [AuthController::class, 'me']);
     });
+
+    // Profile — every authenticated user manages their own account.
+    Route::put('profile',          [AuthController::class, 'updateProfile']);
+    Route::put('profile/password', [AuthController::class, 'updatePassword']);
+
+    // Notifications — every authenticated user reads/marks only their own.
+    Route::get('notifications',           [NotificationController::class, 'index']);
+    Route::post('notifications/read-all', [NotificationController::class, 'markAllRead']);
+    Route::post('notifications/{notification}/read', [NotificationController::class, 'markRead']);
 
     // Dashboard (admin only)
     Route::middleware('role:admin')->get('dashboard', [DashboardController::class, 'index']);

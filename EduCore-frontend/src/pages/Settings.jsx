@@ -1,174 +1,177 @@
 import { useState } from "react";
-import {
-  FaUniversity,
-  FaBell,
-  FaSave,
-} from "react-icons/fa";
+import { FaUserCircle, FaLock, FaSave } from "react-icons/fa";
 import Sidebar from "../components/Sidebar";
+import { useAuth } from "../context/AuthContext.jsx";
+import * as authApi from "../api/auth";
 
 import "../styles/settings.css";
 
+const ROLE_LABELS = { admin: "Administrateur", teacher: "Formateur", student: "Stagiaire" };
+
 export default function Settings() {
-  const [settings, setSettings] = useState({
-    university: "ENSA Agadir",
-    year: "2024-2025",
-    language: "Français",
-    emailNotifications: true,
+  const { user, role, updateUser } = useAuth();
+
+  const [profile, setProfile] = useState({
+    nom: user?.nom || "",
+    prenom: user?.prenom || "",
+    email: user?.email || "",
   });
+  const [profileStatus, setProfileStatus] = useState({ loading: false, error: "", success: "" });
 
-  const handleChange = (e) => {
-    setSettings({
-      ...settings,
-      [e.target.name]: e.target.value,
-    });
+  const [passwordForm, setPasswordForm] = useState({
+    current_password: "",
+    password: "",
+    password_confirmation: "",
+  });
+  const [passwordStatus, setPasswordStatus] = useState({ loading: false, error: "", success: "" });
+
+  const handleProfileChange = (e) => {
+    setProfile({ ...profile, [e.target.name]: e.target.value });
   };
 
-  const toggleNotifications = () => {
-    setSettings({
-      ...settings,
-      emailNotifications: !settings.emailNotifications,
-    });
+  const handlePasswordChange = (e) => {
+    setPasswordForm({ ...passwordForm, [e.target.name]: e.target.value });
   };
 
-  const handleSave = () => {
-    console.log(settings);
+  const handleProfileSave = async () => {
+    setProfileStatus({ loading: true, error: "", success: "" });
+    try {
+      const updated = await authApi.updateProfile(profile);
+      updateUser(updated);
+      setProfileStatus({ loading: false, error: "", success: "Profil mis à jour avec succès !" });
+    } catch (err) {
+      const message = err?.response?.data?.errors
+        ? Object.values(err.response.data.errors).flat().join(" ")
+        : "Erreur lors de la mise à jour du profil.";
+      setProfileStatus({ loading: false, error: message, success: "" });
+    }
+  };
 
-    alert("Paramètres enregistrés avec succès !");
+  const handlePasswordSave = async () => {
+    setPasswordStatus({ loading: true, error: "", success: "" });
+    try {
+      await authApi.updatePassword(passwordForm);
+      setPasswordForm({ current_password: "", password: "", password_confirmation: "" });
+      setPasswordStatus({ loading: false, error: "", success: "Mot de passe mis à jour avec succès !" });
+    } catch (err) {
+      const message = err?.response?.data?.errors
+        ? Object.values(err.response.data.errors).flat().join(" ")
+        : "Erreur lors de la mise à jour du mot de passe.";
+      setPasswordStatus({ loading: false, error: message, success: "" });
+    }
   };
 
   return (
     <div className="dashboard">
-        <Sidebar role="admin" />
-    <div className="settings-page">
+      <Sidebar />
+      <div className="settings-page">
 
-      <div className="page-header">
-        <h1>Paramètres</h1>
-
-        <p>
-          Gérez les paramètres généraux de la plateforme.
-        </p>
-      </div>
-
-      {/* GENERAL */}
-
-      <div className="settings-card">
-
-        <div className="card-header">
-
-          <div className="card-icon blue">
-            <FaUniversity />
-          </div>
-
-          <div>
-            <h2>Général</h2>
-            <p>
-              Informations générales sur votre établissement.
-            </p>
-          </div>
-
+        <div className="page-header">
+          <h1>Paramètres</h1>
+          <p>Gérez les informations de votre compte.</p>
         </div>
 
-        <div className="form-grid">
-
-          <div className="form-group">
-
-            <label>Nom de l'université</label>
-
-            <input
-              type="text"
-              name="university"
-              value={settings.university}
-              onChange={handleChange}
-            />
-
+        {/* PROFILE */}
+        <div className="settings-card">
+          <div className="card-header">
+            <div className="card-icon blue">
+              <FaUserCircle />
+            </div>
+            <div>
+              <h2>Profil</h2>
+              <p>Vos informations personnelles.</p>
+            </div>
           </div>
 
-          <div className="form-group">
+          <div className="form-grid">
+            <div className="form-group">
+              <label>Prénom</label>
+              <input type="text" name="prenom" value={profile.prenom} onChange={handleProfileChange} />
+            </div>
 
-            <label>Année académique</label>
+            <div className="form-group">
+              <label>Nom</label>
+              <input type="text" name="nom" value={profile.nom} onChange={handleProfileChange} />
+            </div>
 
-            <select
-              name="year"
-              value={settings.year}
-              onChange={handleChange}
-            >
-              <option>2024-2025</option>
-              <option>2025-2026</option>
-              <option>2026-2027</option>
-            </select>
+            <div className="form-group">
+              <label>Email</label>
+              <input type="email" name="email" value={profile.email} onChange={handleProfileChange} />
+            </div>
 
+            <div className="form-group">
+              <label>Rôle</label>
+              <input type="text" value={ROLE_LABELS[role] || role} disabled />
+            </div>
           </div>
 
-          <div className="form-group">
+          {profileStatus.error && <p className="settings-error">{profileStatus.error}</p>}
+          {profileStatus.success && <p className="settings-success">{profileStatus.success}</p>}
 
-            <label>Langue</label>
-
-            <select
-              name="language"
-              value={settings.language}
-              onChange={handleChange}
-            >
-              <option>Français</option>
-              <option>English</option>
-            </select>
-
+          <div className="save-section">
+            <button className="save-btn" onClick={handleProfileSave} disabled={profileStatus.loading}>
+              <FaSave />
+              {profileStatus.loading ? "Enregistrement..." : "Enregistrer le profil"}
+            </button>
           </div>
-
         </div>
 
-      </div>
-
-      {/* NOTIFICATIONS */}
-
-      <div className="settings-card">
-
-        <div className="card-header">
-
-          <div className="card-icon purple">
-            <FaBell />
+        {/* PASSWORD */}
+        <div className="settings-card">
+          <div className="card-header">
+            <div className="card-icon purple">
+              <FaLock />
+            </div>
+            <div>
+              <h2>Mot de passe</h2>
+              <p>Modifiez votre mot de passe de connexion.</p>
+            </div>
           </div>
 
-          <div>
-            <h2>Notifications</h2>
-            <p>
-              Gérez vos préférences de notification.
-            </p>
+          <div className="form-grid">
+            <div className="form-group">
+              <label>Mot de passe actuel</label>
+              <input
+                type="password"
+                name="current_password"
+                value={passwordForm.current_password}
+                onChange={handlePasswordChange}
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Nouveau mot de passe</label>
+              <input
+                type="password"
+                name="password"
+                value={passwordForm.password}
+                onChange={handlePasswordChange}
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Confirmer le mot de passe</label>
+              <input
+                type="password"
+                name="password_confirmation"
+                value={passwordForm.password_confirmation}
+                onChange={handlePasswordChange}
+              />
+            </div>
           </div>
 
-        </div>
+          {passwordStatus.error && <p className="settings-error">{passwordStatus.error}</p>}
+          {passwordStatus.success && <p className="settings-success">{passwordStatus.success}</p>}
 
-        <div className="notification-box">
-
-          <span>Email notifications</span>
-
-          <div
-  className={`toggle ${
-    settings.emailNotifications ? "active" : ""
-  }`}
-  onClick={toggleNotifications}
->
-  <div className="toggle-circle"></div>
-</div>
-
+          <div className="save-section">
+            <button className="save-btn" onClick={handlePasswordSave} disabled={passwordStatus.loading}>
+              <FaSave />
+              {passwordStatus.loading ? "Enregistrement..." : "Changer le mot de passe"}
+            </button>
+          </div>
         </div>
 
       </div>
-
-      {/* SAVE */}
-
-      <div className="save-section">
-
-        <button
-          className="save-btn"
-          onClick={handleSave}
-        >
-          <FaSave />
-          Enregistrer les paramètres
-        </button>
-
-      </div>
-
-    </div>
     </div>
   );
 }
