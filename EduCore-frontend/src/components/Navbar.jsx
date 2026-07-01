@@ -1,7 +1,19 @@
 import "../styles/navbar.css";
-import { FiBell,  } from "react-icons/fi";
+import { FiBell, FiLogOut } from "react-icons/fi";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext.jsx";
 
 export default function Navbar() {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await logout();
+    navigate("/login");
+  };
+
+  const fullName = user ? `${user.prenom} ${user.nom}` : "";
+
   return (
     <nav className="navbar">
 
@@ -16,19 +28,26 @@ export default function Navbar() {
       {/* RIGHT SIDE */}
       <div className="navbar-right">
 
-        
+
         <div className="notifications">
           <FiBell className="icon bell" />
         </div>
 
         <div className="user-box">
           <img
-            src="https://i.pravatar.cc/40"
-            alt="admin"
+            src={user?.photo || "https://i.pravatar.cc/40"}
+            alt={fullName}
             className="user-img"
           />
-          <span>Admin</span>
+          <span>{fullName}</span>
         </div>
+
+        <FiLogOut
+          className="icon"
+          title="Déconnexion"
+          onClick={handleLogout}
+          style={{ cursor: "pointer" }}
+        />
 
       </div>
     </nav>

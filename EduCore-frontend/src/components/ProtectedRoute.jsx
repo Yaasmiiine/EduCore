@@ -1,14 +1,15 @@
 import { Navigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext.jsx";
 
 export default function ProtectedRoute({
   children,
   allowedRoles
 }) {
 
-  const role = localStorage.getItem("role");
+  const { role, isAuthenticated } = useAuth();
 
   // NOT LOGGED IN
-  if (!role) {
+  if (!isAuthenticated) {
     return <Navigate to="/login" />;
   }
 

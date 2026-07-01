@@ -1,4 +1,5 @@
 import { NavLink } from "react-router-dom";
+import { useAuth } from "../context/AuthContext.jsx";
 import "../styles/sidebar.css";
 
 import {
@@ -12,16 +13,12 @@ import {
   FaBullhorn,
   FaRobot,
   FaExclamationTriangle,
-
   FaCog,
-  FaUserGraduate,
-  FaClipboardCheck,
-  FaChartLine,
-  FaClock,
-  FaFileAlt
 } from "react-icons/fa";
 
-export default function Sidebar({ role }) {
+export default function Sidebar() {
+
+  const { role } = useAuth();
 
   const adminMenu = (
     <>
@@ -90,7 +87,7 @@ export default function Sidebar({ role }) {
             Génération d'emplois
           </li>
         </NavLink>
-        
+
         <NavLink to="/conflict-detection">
           <li>
             <FaExclamationTriangle />
@@ -103,14 +100,14 @@ export default function Sidebar({ role }) {
       <p className="section-title">PARAMÈTRES</p>
 
       <ul className="menu">
-        
+
         <NavLink to="/settings">
           <li>
             <FaCog />
             Paramètres
           </li>
         </NavLink>
-        
+
       </ul>
     </>
   );
@@ -121,27 +118,38 @@ export default function Sidebar({ role }) {
       <p className="section-title">ENSEIGNEMENT</p>
 
       <ul className="menu">
-        <li><FaBook /> Mes Modules</li>
-        <li><FaUsers /> Étudiants</li>
-        <li><FaClipboardCheck /> Notes</li>
-        <li><FaCalendarAlt /> Emploi du temps</li>
-        <li><FaBullhorn /> Annonces</li>
-      </ul>
+        <NavLink to="/modules">
+          <li>
+            <FaBook />
+            Mes Modules
+          </li>
+        </NavLink>
 
-      {/* SUIVI */}
-      <p className="section-title">SUIVI</p>
+        <NavLink to="/schedule">
+          <li>
+            <FaCalendarAlt />
+            Emploi du temps
+          </li>
+        </NavLink>
 
-      <ul className="menu">
-        <li><FaChartLine /> Progression</li>
-        <li><FaClock /> Présences</li>
-        <li><FaFileAlt /> Supports de cours</li>
+        <NavLink to="/announcements">
+          <li>
+            <FaBullhorn />
+            Annonces
+          </li>
+        </NavLink>
       </ul>
 
       {/* SETTINGS */}
       <p className="section-title">PARAMÈTRES</p>
 
       <ul className="menu">
-        <li><FaCog /> Paramètres</li>
+        <NavLink to="/settings">
+          <li>
+            <FaCog />
+            Paramètres
+          </li>
+        </NavLink>
       </ul>
     </>
   );
@@ -152,26 +160,38 @@ export default function Sidebar({ role }) {
       <p className="section-title">ÉTUDES</p>
 
       <ul className="menu">
-        <li><FaBook /> Mes Modules</li>
-        <li><FaClipboardCheck /> Mes Notes</li>
-        <li><FaCalendarAlt /> Emploi du temps</li>
-        <li><FaClock /> Absences</li>
-        <li><FaBullhorn /> Annonces</li>
-      </ul>
+        <NavLink to="/modules">
+          <li>
+            <FaBook />
+            Mes Modules
+          </li>
+        </NavLink>
 
-      {/* PERFORMANCE */}
-      <p className="section-title">PERFORMANCE</p>
+        <NavLink to="/schedule">
+          <li>
+            <FaCalendarAlt />
+            Emploi du temps
+          </li>
+        </NavLink>
 
-      <ul className="menu">
-        <li><FaChartLine /> Progression</li>
-        <li><FaUserGraduate /> Résultats</li>
+        <NavLink to="/announcements">
+          <li>
+            <FaBullhorn />
+            Annonces
+          </li>
+        </NavLink>
       </ul>
 
       {/* SETTINGS */}
       <p className="section-title">PARAMÈTRES</p>
 
       <ul className="menu">
-        <li><FaCog /> Paramètres</li>
+        <NavLink to="/settings">
+          <li>
+            <FaCog />
+            Paramètres
+          </li>
+        </NavLink>
       </ul>
     </>
   );
@@ -189,7 +209,7 @@ export default function Sidebar({ role }) {
         </NavLink>
       </ul>
 
-     
+
       {/* ROLE MENU */}
       {role === "admin" && adminMenu}
       {role === "teacher" && teacherMenu}

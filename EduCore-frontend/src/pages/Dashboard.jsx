@@ -1,10 +1,11 @@
 import AdminDashboard from "./AdminDashboard";
 import TeacherDashboard from "./TeacherDashboard";
 import StudentDashboard from "./StudentDashboard";
+import { useAuth } from "../context/AuthContext.jsx";
 
 export default function Dashboard() {
 
-  const role = localStorage.getItem("role");
+  const { role } = useAuth();
 
   switch(role) {
 

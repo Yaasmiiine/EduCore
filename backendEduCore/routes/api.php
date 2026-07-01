@@ -19,6 +19,12 @@ Route::prefix('auth')->group(function () {
     Route::post('login',    [AuthController::class, 'login']);
 });
 
+// Filieres & groupes reads are public — a prospective stagiaire needs to see
+// the list of filières/groupes to pick one on the registration form, before
+// they have a token.
+Route::apiResource('filieres', FiliereController::class)->only(['index', 'show']);
+Route::apiResource('groupes', GroupeController::class)->only(['index', 'show']);
+
 // ─── Protected routes ───────────────────────────────────────────────────────
 Route::middleware('auth:api')->group(function () {
 
@@ -37,15 +43,9 @@ Route::middleware('auth:api')->group(function () {
         Route::apiResource('users', UserController::class);
     });
 
-    // Filieres — everyone reads, admin writes
-    Route::apiResource('filieres', FiliereController::class)->only(['index', 'show']);
+    // Filieres/groupes writes — admin only (reads are public, registered above)
     Route::middleware('role:admin')->group(function () {
         Route::apiResource('filieres', FiliereController::class)->only(['store', 'update', 'destroy']);
-    });
-
-    // Groupes — everyone reads, admin writes
-    Route::apiResource('groupes', GroupeController::class)->only(['index', 'show']);
-    Route::middleware('role:admin')->group(function () {
         Route::apiResource('groupes', GroupeController::class)->only(['store', 'update', 'destroy']);
     });
 

@@ -99,6 +99,44 @@
   border-color:#6366f1;
 }
 
+.input-group select{
+  width:100%;
+
+  padding:16px 16px 16px 50px;
+
+  border-radius:14px;
+
+  border:1px solid #cbd5e1;
+
+  outline:none;
+
+  font-size:15px;
+
+  background:white;
+
+  appearance:none;
+}
+
+.input-group select:focus{
+  border-color:#6366f1;
+}
+
+.auth-error{
+  background:#fef2f2;
+  color:#b91c1c;
+  border:1px solid #fecaca;
+  border-radius:12px;
+  padding:12px 16px;
+  font-size:14px;
+  margin-bottom:20px;
+  text-align:center;
+}
+
+.auth-btn:disabled{
+  opacity:0.7;
+  cursor:not-allowed;
+}
+
 .auth-btn{
   width:100%;
 

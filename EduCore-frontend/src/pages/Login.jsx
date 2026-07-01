@@ -1,24 +1,42 @@
 import "../styles/auth.css";
 
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext.jsx";
 
 import {
   FaEnvelope,
   FaLock,
-  
+
 } from "react-icons/fa";
+
+const DASHBOARD_PATH = "/dashboard";
 
 export default function Login() {
 
   const navigate = useNavigate();
+  const { login } = useAuth();
 
-  const handleLogin = (e) => {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleLogin = async (e) => {
     e.preventDefault();
+    setError("");
+    setLoading(true);
 
-    // TEMP LOGIN
-    localStorage.setItem("role", "admin");
-
-    navigate("/dashboard");
+    try {
+      await login({ email, password });
+      navigate(DASHBOARD_PATH);
+    } catch (err) {
+      setError(
+        err.response?.data?.message || "Une erreur est survenue, veuillez réessayer."
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -39,6 +57,8 @@ export default function Login() {
           Connectez-vous à votre compte
         </p>
 
+        {error && <div className="auth-error">{error}</div>}
+
         <form onSubmit={handleLogin}>
 
           <div className="input-group">
@@ -47,6 +67,9 @@ export default function Login() {
             <input
               type="email"
               placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
             />
           </div>
 
@@ -56,11 +79,14 @@ export default function Login() {
             <input
               type="password"
               placeholder="Mot de passe"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
             />
           </div>
 
-          <button className="auth-btn">
-            Se connecter
+          <button className="auth-btn" disabled={loading}>
+            {loading ? "Connexion..." : "Se connecter"}
           </button>
 
         </form>
