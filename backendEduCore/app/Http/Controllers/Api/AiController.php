@@ -16,7 +16,7 @@ class AiController extends Controller
         try {
             $text = $gemini->generate(
                 $request->message,
-                "Tu es un assistant pédagogique pour l'OFPPT. Réponds en français, de façon concise et utile pour des stagiaires et formateurs en formation professionnelle."
+                "Tu es un assistant pédagogique pour un établissement de formation. Réponds en français, de façon concise et utile pour des stagiaires et formateurs."
             );
         } catch (Throwable $e) {
             return response()->json(['message' => 'Erreur lors de la génération de la réponse'], 500);

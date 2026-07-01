@@ -25,8 +25,8 @@ class DatabaseSeeder extends Seeder
         // Admin
         $adminUser = User::create([
             'nom'      => 'Admin',
-            'prenom'   => 'OFPPT',
-            'email'    => 'admin@ofppt.ma',
+            'prenom'   => 'EduCore',
+            'email'    => 'admin@educore.test',
             'password' => Hash::make('password123'),
             'role_id'  => $admin->id,
         ]);
@@ -35,7 +35,7 @@ class DatabaseSeeder extends Seeder
         $formateurUser = User::create([
             'nom'      => 'Alami',
             'prenom'   => 'Mohammed',
-            'email'    => 'formateur@ofppt.ma',
+            'email'    => 'formateur@educore.test',
             'password' => Hash::make('password123'),
             'role_id'  => $formateur->id,
         ]);
@@ -57,7 +57,7 @@ class DatabaseSeeder extends Seeder
         User::create([
             'nom'       => 'Benali',
             'prenom'    => 'Youssef',
-            'email'     => 'stagiaire@ofppt.ma',
+            'email'     => 'stagiaire@educore.test',
             'password'  => Hash::make('password123'),
             'role_id'   => $stagiaire->id,
             'groupe_id' => $groupe->id,
@@ -99,7 +99,7 @@ class DatabaseSeeder extends Seeder
             'auteur_id' => $adminUser->id,
             'groupe_id' => null,
             'titre'     => 'Bienvenue sur EduCore',
-            'contenu'   => 'La plateforme académique EduCore est maintenant disponible pour toute la communauté OFPPT.',
+            'contenu'   => 'La plateforme académique EduCore est maintenant disponible pour toute la communauté éducative.',
             'priorite'  => 'normale',
         ]);
     }

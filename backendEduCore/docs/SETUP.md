@@ -55,11 +55,11 @@ php artisan serve
 ```
 
 ## Demo accounts
-| Role       | Email                  | Password     | Notes                          |
-|------------|------------------------|---------------|--------------------------------|
-| Admin      | admin@ofppt.ma         | password123   | Full access                    |
-| Formateur  | formateur@ofppt.ma     | password123   | Assigned to "Développement Web"|
-| Stagiaire  | stagiaire@ofppt.ma     | password123   | In groupe DEV101-G1            |
+| Role       | Email                    | Password     | Notes                          |
+|------------|--------------------------|---------------|--------------------------------|
+| Admin      | admin@educore.test       | password123   | Full access                    |
+| Formateur  | formateur@educore.test   | password123   | Assigned to "Développement Web"|
+| Stagiaire  | stagiaire@educore.test   | password123   | In groupe DEV101-G1            |
 
 `POST /api/auth/register` is for stagiaires only (must supply `groupe_id`) — admin and
 formateur accounts are created by an admin via `POST /api/users`.

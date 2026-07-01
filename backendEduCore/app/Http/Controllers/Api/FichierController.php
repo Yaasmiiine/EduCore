@@ -65,12 +65,12 @@ class FichierController extends Controller
     public function resumeIA(Fichier $fichier, GeminiClient $gemini)
     {
         $prompt = "Le fichier suivant s'appelle : \"{$fichier->nom}\" et appartient à un module de formation. "
-            . "Génère un résumé structuré en 3-5 points clés en français, adapté pour des stagiaires en formation professionnelle.";
+            . "Génère un résumé structuré en 3-5 points clés en français, adapté pour des stagiaires.";
 
         try {
             $resume = $gemini->generate(
                 $prompt,
-                "Tu es un assistant pédagogique pour l'OFPPT."
+                "Tu es un assistant pédagogique pour un établissement de formation."
             );
         } catch (Throwable $e) {
             return response()->json(['message' => 'Erreur lors de la génération du résumé'], 500);

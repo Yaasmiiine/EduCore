@@ -6,7 +6,7 @@ import "../styles/chatWidget.css";
 export default function ChatWidget() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState([
-    { role: "assistant", text: "Bonjour ! Je suis votre assistant pédagogique OFPPT. Comment puis-je vous aider ?" },
+    { role: "assistant", text: "Bonjour ! Je suis votre assistant pédagogique. Comment puis-je vous aider ?" },
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);

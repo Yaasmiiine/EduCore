@@ -165,7 +165,7 @@ class EmploiDuTempsController extends Controller
         })->implode("\n");
 
         $prompt = <<<PROMPT
-        Voici une liste de conflits détectés dans un emploi du temps d'un établissement de formation professionnelle (OFPPT) :
+        Voici une liste de conflits détectés dans un emploi du temps d'un établissement de formation :
 
         {$summary}
 
@@ -174,7 +174,7 @@ class EmploiDuTempsController extends Controller
         PROMPT;
 
         try {
-            $suggestions = $gemini->generate($prompt, "Tu es un assistant pédagogique pour l'OFPPT, expert en planification d'emplois du temps.");
+            $suggestions = $gemini->generate($prompt, "Tu es un assistant pédagogique pour un établissement de formation, expert en planification d'emplois du temps.");
         } catch (Throwable $e) {
             return response()->json(['message' => 'Erreur lors de l\'analyse IA'], 500);
         }

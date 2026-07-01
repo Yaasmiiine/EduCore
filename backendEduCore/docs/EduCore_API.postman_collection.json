@@ -1,6 +1,6 @@
 {
   "info": {
-    "name": "OFPPT API",
+    "name": "EduCore API",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -19,7 +19,7 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nom\": \"Test\",\n  \"prenom\": \"User\",\n  \"email\": \"test@ofppt.ma\",\n  \"password\": \"password123\",\n  \"role_id\": 1\n}"
+              "raw": "{\n  \"nom\": \"Test\",\n  \"prenom\": \"User\",\n  \"email\": \"test@educore.test\",\n  \"password\": \"password123\",\n  \"role_id\": 1\n}"
             }
           }
         },
@@ -32,7 +32,7 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"admin@ofppt.ma\",\n  \"password\": \"password123\"\n}"
+              "raw": "{\n  \"email\": \"admin@educore.test\",\n  \"password\": \"password123\"\n}"
             }
           }
         },
@@ -71,7 +71,7 @@
       "name": "Users",
       "item": [
         { "name": "List", "request": { "method": "GET", "url": "{{base_url}}/users", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }] } },
-        { "name": "Create", "request": { "method": "POST", "url": "{{base_url}}/users", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"nom\": \"Nouveau\",\n  \"prenom\": \"Formateur\",\n  \"email\": \"new@ofppt.ma\",\n  \"password\": \"password123\",\n  \"role_id\": 2\n}" } } },
+        { "name": "Create", "request": { "method": "POST", "url": "{{base_url}}/users", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"nom\": \"Nouveau\",\n  \"prenom\": \"Formateur\",\n  \"email\": \"new@educore.test\",\n  \"password\": \"password123\",\n  \"role_id\": 2\n}" } } },
         { "name": "Show", "request": { "method": "GET", "url": "{{base_url}}/users/1", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }] } },
         { "name": "Update", "request": { "method": "PUT", "url": "{{base_url}}/users/1", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"nom\": \"Updated\"\n}" } } },
         { "name": "Delete", "request": { "method": "DELETE", "url": "{{base_url}}/users/1", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }] } }
@@ -103,7 +103,7 @@
       "item": [
         { "name": "List", "request": { "method": "GET", "url": "{{base_url}}/emplois-du-temps", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }] } },
         { "name": "List by groupe", "request": { "method": "GET", "url": "{{base_url}}/emplois-du-temps?groupe_id=1", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }] } },
-        { "name": "Create", "request": { "method": "POST", "url": "{{base_url}}/emplois-du-temps", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"groupe_id\": 1,\n  \"module_id\": 1,\n  \"formateur_id\": 2,\n  \"salle\": \"A12\",\n  \"jour\": \"Lundi\",\n  \"heure_debut\": \"08:30\",\n  \"heure_fin\": \"11:30\"\n}" } } }
+        { "name": "Create", "request": { "method": "POST", "url": "{{base_url}}/emplois-du-temps", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"groupe_id\": 1,\n  \"module_id\": 1,\n  \"formateur_id\": 2,\n  \"salle_id\": 1,\n  \"jour\": \"Lundi\",\n  \"heure_debut\": \"08:30\",\n  \"heure_fin\": \"11:30\"\n}" } } }
       ]
     }
   ]
