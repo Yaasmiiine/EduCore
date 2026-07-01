@@ -17,6 +17,8 @@ const EMPTY_FORM = { module_id: "", formateur_id: "", salle_id: "", jour: "Lundi
 export default function Schedule() {
   const { role, user } = useAuth();
   const isAdmin = role === "admin";
+  const isTeacher = role === "teacher";
+  const isStudent = role === "student";
 
   const [groupes, setGroupes] = useState([]);
   const [selectedGroupeId, setSelectedGroupeId] = useState("");
@@ -32,40 +34,42 @@ export default function Schedule() {
   const [formError, setFormError] = useState("");
   const [saving, setSaving] = useState(false);
 
-  // Initial load: groupes + reference data (modules/salles/formateurs only needed for admin's add form)
+  // Admin-only reference data (groupe selector + add-séance form options)
   useEffect(() => {
-    const requests = isAdmin
-      ? [groupesApi.list(), modulesApi.list(), sallesApi.list(), usersApi.list()]
-      : [groupesApi.list()];
-
-    Promise.all(requests)
+    if (!isAdmin) return;
+    Promise.all([groupesApi.list(), modulesApi.list(), sallesApi.list(), usersApi.list()])
       .then(([groupesData, modulesData, sallesData, usersData]) => {
         setGroupes(groupesData);
-        if (modulesData) setModules(modulesData);
-        if (sallesData) setSalles(sallesData);
-        if (usersData) setFormateurs(usersData.filter((u) => u.role?.nom === "formateur"));
-
-        // Default selection: student -> their own groupe; teacher/admin -> first groupe
-        const defaultGroupeId = role === "student" ? user?.groupe_id : groupesData[0]?.id;
-        if (defaultGroupeId) setSelectedGroupeId(String(defaultGroupeId));
+        setModules(modulesData);
+        setSalles(sallesData);
+        setFormateurs(usersData.filter((u) => u.role?.nom === "formateur"));
+        if (groupesData[0]) setSelectedGroupeId(String(groupesData[0].id));
       })
       .catch(() => setError("Impossible de charger les données."));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isAdmin]);
 
-  const loadSeances = (groupeId) => {
-    if (!groupeId) return;
+  const loadSeances = (params) => {
     setLoading(true);
     emploisDuTempsApi
-      .list({ groupe_id: groupeId })
+      .list(params)
       .then(setSeances)
       .catch(() => setError("Impossible de charger l'emploi du temps."))
       .finally(() => setLoading(false));
   };
 
+  // What to load depends on role: admin -> selected groupe, teacher -> their own séances, student -> their groupe
   useEffect(() => {
-    if (selectedGroupeId) loadSeances(selectedGroupeId);
-  }, [selectedGroupeId]);
+    if (isAdmin) {
+      if (selectedGroupeId) loadSeances({ groupe_id: selectedGroupeId });
+    } else if (isTeacher && user) {
+      loadSeances({ formateur_id: user.id });
+    } else if (isStudent && user?.groupe_id) {
+      loadSeances({ groupe_id: user.groupe_id });
+    } else {
+      setLoading(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAdmin, isTeacher, isStudent, selectedGroupeId, user]);
 
   const timeSlots = useMemo(() => {
     const unique = new Map();
@@ -76,8 +80,8 @@ export default function Schedule() {
     return [...unique.values()].sort((a, b) => a.heure_debut.localeCompare(b.heure_debut));
   }, [seances]);
 
-  const findSeance = (jour, slot) =>
-    seances.find((s) => s.jour === jour && s.heure_debut === slot.heure_debut && s.heure_fin === slot.heure_fin);
+  const findSeances = (jour, slot) =>
+    seances.filter((s) => s.jour === jour && s.heure_debut === slot.heure_debut && s.heure_fin === slot.heure_fin);
 
   const selectedGroupe = groupes.find((g) => String(g.id) === String(selectedGroupeId));
 
@@ -99,7 +103,7 @@ export default function Schedule() {
     try {
       await emploisDuTempsApi.create({ ...form, groupe_id: selectedGroupeId });
       setModalOpen(false);
-      loadSeances(selectedGroupeId);
+      loadSeances({ groupe_id: selectedGroupeId });
     } catch (err) {
       const errors = err.response?.data?.errors;
       setFormError(errors ? Object.values(errors).flat().join(" ") : "Une erreur est survenue.");
@@ -129,7 +133,7 @@ export default function Schedule() {
           </button>
         )}
         <h4>{seance.module?.nom}</h4>
-        <p>{seance.formateur?.prenom} {seance.formateur?.nom}</p>
+        <p>{isTeacher ? seance.groupe?.nom : `${seance.formateur?.prenom} ${seance.formateur?.nom}`}</p>
         <span>{seance.salle?.nom}</span>
       </div>
     );
@@ -151,18 +155,33 @@ export default function Schedule() {
 
       {/* FILTERS */}
       <div className="schedule-filters">
-        <div className="filter-group">
-          <label>Groupe</label>
-          <select
-            value={selectedGroupeId}
-            onChange={(e) => setSelectedGroupeId(e.target.value)}
-            disabled={role === "student"}
-          >
-            {groupes.map((g) => (
-              <option key={g.id} value={g.id}>{g.filiere?.nom} — {g.nom}</option>
-            ))}
-          </select>
-        </div>
+        {isAdmin && (
+          <div className="filter-group">
+            <label>Groupe</label>
+            <select
+              value={selectedGroupeId}
+              onChange={(e) => setSelectedGroupeId(e.target.value)}
+            >
+              {groupes.map((g) => (
+                <option key={g.id} value={g.id}>{g.filiere?.nom} — {g.nom}</option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {isTeacher && (
+          <div className="filter-group">
+            <label>Mes séances</label>
+            <p>Toutes mes séances, tous groupes confondus</p>
+          </div>
+        )}
+
+        {isStudent && (
+          <div className="filter-group">
+            <label>Groupe</label>
+            <p>{user?.groupe?.nom || "—"}</p>
+          </div>
+        )}
 
         {isAdmin && (
           <button
@@ -181,7 +200,7 @@ export default function Schedule() {
         {loading ? (
           <p style={{ padding: 24 }}>Chargement...</p>
         ) : timeSlots.length === 0 ? (
-          <p style={{ padding: 24 }}>Aucune séance programmée pour ce groupe.</p>
+          <p style={{ padding: 24 }}>Aucune séance programmée.</p>
         ) : (
         <table className="schedule-table">
           <thead>
@@ -198,7 +217,11 @@ export default function Schedule() {
               <tr key={index}>
                 <td className="time-cell">{slot.heure_debut.slice(0, 5)} - {slot.heure_fin.slice(0, 5)}</td>
                 {JOURS.map((jour) => (
-                  <td key={jour}>{renderCourse(findSeance(jour, slot))}</td>
+                  <td key={jour}>
+                    {findSeances(jour, slot).length === 0
+                      ? renderCourse(null)
+                      : findSeances(jour, slot).map((s) => <div key={s.id}>{renderCourse(s)}</div>)}
+                  </td>
                 ))}
               </tr>
             ))}

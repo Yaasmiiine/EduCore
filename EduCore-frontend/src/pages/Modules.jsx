@@ -5,6 +5,7 @@ import Sidebar from "../components/Sidebar";
 import modulesApi from "../api/modules";
 import filieresApi from "../api/filieres";
 import usersApi from "../api/users";
+import fichiersApi from "../api/fichiers";
 import { useAuth } from "../context/AuthContext.jsx";
 
 import {
@@ -13,11 +14,13 @@ import {
   FaUserTie,
   FaUniversity,
   FaClock,
-  FaChevronLeft,
-  FaChevronRight,
   FaPlus,
   FaTimes,
   FaTrash,
+  FaFileAlt,
+  FaUpload,
+  FaDownload,
+  FaMagic,
 } from "react-icons/fa";
 
 const CARD_COLORS = [
@@ -31,8 +34,10 @@ const CARD_COLORS = [
 
 const EMPTY_FORM = { nom: "", code: "", description: "", filiere_id: "", formateur_id: "", heures_total: "" };
 
+const STORAGE_BASE = (import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api").replace(/\/api\/?$/, "");
+
 export default function Modules() {
-  const { role } = useAuth();
+  const { role, user } = useAuth();
   const isAdmin = role === "admin";
 
   const [modules, setModules] = useState([]);
@@ -46,6 +51,14 @@ export default function Modules() {
   const [formError, setFormError] = useState("");
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
+
+  // File management modal
+  const [filesModule, setFilesModule] = useState(null);
+  const [files, setFiles] = useState([]);
+  const [filesLoading, setFilesLoading] = useState(false);
+  const [fileError, setFileError] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const [generatingId, setGeneratingId] = useState(null);
 
   const loadAll = () => {
     setLoading(true);
@@ -68,6 +81,14 @@ export default function Modules() {
     loadAll();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const visibleModules = useMemo(() => {
+    if (role === "teacher") return modules.filter((m) => m.formateur_id === user?.id);
+    if (role === "student") return modules.filter((m) => m.filiere_id === user?.groupe?.filiere_id);
+    return modules;
+  }, [modules, role, user]);
+
+  const canManageFiles = (module) => isAdmin || (role === "teacher" && module.formateur_id === user?.id);
 
   const openCreateModal = () => {
     setForm(EMPTY_FORM);
@@ -102,9 +123,62 @@ export default function Modules() {
     }
   };
 
+  const openFilesModal = (module) => {
+    setFilesModule(module);
+    setFileError("");
+    setFilesLoading(true);
+    fichiersApi
+      .list({ module_id: module.id })
+      .then(setFiles)
+      .catch(() => setFileError("Impossible de charger les fichiers."))
+      .finally(() => setFilesLoading(false));
+  };
+
+  const handleUpload = async (e) => {
+    e.preventDefault();
+    const file = e.target.elements.fichier.files[0];
+    if (!file) return;
+    setUploading(true);
+    setFileError("");
+    try {
+      await fichiersApi.upload(filesModule.id, file);
+      e.target.reset();
+      const updated = await fichiersApi.list({ module_id: filesModule.id });
+      setFiles(updated);
+    } catch (err) {
+      const errors = err.response?.data?.errors;
+      setFileError(errors ? Object.values(errors).flat().join(" ") : "Erreur lors de l'envoi du fichier.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDeleteFile = async (fichier) => {
+    if (!window.confirm(`Supprimer le fichier "${fichier.nom}" ?`)) return;
+    try {
+      await fichiersApi.remove(fichier.id);
+      setFiles((prev) => prev.filter((f) => f.id !== fichier.id));
+    } catch {
+      setFileError("Impossible de supprimer ce fichier.");
+    }
+  };
+
+  const handleGenerateResume = async (fichier) => {
+    setGeneratingId(fichier.id);
+    setFileError("");
+    try {
+      const { resume_ia } = await fichiersApi.resume(fichier.id);
+      setFiles((prev) => prev.map((f) => (f.id === fichier.id ? { ...f, resume_ia } : f)));
+    } catch {
+      setFileError("Erreur lors de la génération du résumé IA.");
+    } finally {
+      setGeneratingId(null);
+    }
+  };
+
   const filteredModules = useMemo(
-    () => modules.filter((m) => m.nom.toLowerCase().includes(search.toLowerCase())),
-    [modules, search]
+    () => visibleModules.filter((m) => m.nom.toLowerCase().includes(search.toLowerCase())),
+    [visibleModules, search]
   );
 
   return (
@@ -190,6 +264,10 @@ export default function Modules() {
                 <span className="credits">{module.heures_total}h</span>
               </div>
             </div>
+
+            <button className="files-btn" onClick={() => openFilesModal(module)}>
+              <FaFileAlt /> Supports pédagogiques
+            </button>
 
             {isAdmin && (
               <button className="delete-module-btn" onClick={() => handleDelete(module)} title="Supprimer">
@@ -303,6 +381,78 @@ export default function Modules() {
     </div>
   </div>
 )}
+
+      {/* FILES MODAL */}
+      {filesModule && (
+        <div className="modal-overlay" onClick={() => setFilesModule(null)}>
+          <div className="module-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Supports — {filesModule.nom}</h2>
+              <button onClick={() => setFilesModule(null)}>
+                <FaTimes />
+              </button>
+            </div>
+
+            {fileError && <p style={{ color: "#dc2626" }}>{fileError}</p>}
+
+            {canManageFiles(filesModule) && (
+              <form className="upload-form" onSubmit={handleUpload}>
+                <input type="file" name="fichier" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx" required />
+                <button type="submit" className="submit-module" disabled={uploading}>
+                  <FaUpload /> {uploading ? "Envoi..." : "Envoyer"}
+                </button>
+              </form>
+            )}
+
+            {filesLoading ? (
+              <p>Chargement...</p>
+            ) : files.length === 0 ? (
+              <p>Aucun fichier pour ce module.</p>
+            ) : (
+              <ul className="files-list">
+                {files.map((f) => (
+                  <li key={f.id} className="file-item">
+                    <div className="file-item-header">
+                      <FaFileAlt />
+                      <span className="file-name">{f.nom}</span>
+                      <span className="file-size">{(f.taille / 1024).toFixed(0)} Ko</span>
+
+                      <a
+                        href={`${STORAGE_BASE}/storage/${f.chemin}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="file-action"
+                        title="Télécharger"
+                      >
+                        <FaDownload />
+                      </a>
+
+                      <button
+                        className="file-action"
+                        onClick={() => handleGenerateResume(f)}
+                        disabled={generatingId === f.id}
+                        title="Générer un résumé IA"
+                      >
+                        <FaMagic /> {generatingId === f.id ? "..." : "Résumé IA"}
+                      </button>
+
+                      {canManageFiles(filesModule) && (
+                        <button className="file-action delete" onClick={() => handleDeleteFile(f)} title="Supprimer">
+                          <FaTrash />
+                        </button>
+                      )}
+                    </div>
+
+                    {f.resume_ia && (
+                      <p className="file-resume">{f.resume_ia}</p>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      )}
     </div>
 </div>
   );

@@ -104,15 +104,21 @@ export default function Announcements() {
     }
   };
 
+  // Students only see global announcements + the ones aimed at their own groupe.
+  const visibleAnnonces = useMemo(() => {
+    if (role !== "student") return annonces;
+    return annonces.filter((a) => !a.groupe_id || a.groupe_id === user?.groupe_id);
+  }, [annonces, role, user]);
+
   const filteredAnnonces = useMemo(() => {
-    return annonces.filter((a) => {
+    return visibleAnnonces.filter((a) => {
       const matchesSearch = a.titre.toLowerCase().includes(search.toLowerCase());
       const matchesPriorite = !prioriteFilter || a.priorite === prioriteFilter;
       return matchesSearch && matchesPriorite;
     });
-  }, [annonces, search, prioriteFilter]);
+  }, [visibleAnnonces, search, prioriteFilter]);
 
-  const countByPriorite = (p) => annonces.filter((a) => a.priorite === p).length;
+  const countByPriorite = (p) => visibleAnnonces.filter((a) => a.priorite === p).length;
 
   return (
     <div className="dashboard">
@@ -156,7 +162,7 @@ export default function Announcements() {
 
             <div>
               <p>Total annonces</p>
-              <h2>{annonces.length}</h2>
+              <h2>{visibleAnnonces.length}</h2>
             </div>
 
           </div>
