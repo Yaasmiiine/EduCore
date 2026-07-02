@@ -38,25 +38,7 @@ return [
             'report' => false,
         ],
 
-        // Every uploaded file (Fichier, Soumission) is written to and read
-        // back from the "public" disk, but files are always served through
-        // an authenticated Laravel download route — never a raw disk URL —
-        // so switching its driver here is enough; no controller touches
-        // ->url() on it. Locally this stays plain local disk. In production,
-        // UPLOADS_DISK=s3 points it at an S3-compatible provider instead
-        // (Backblaze B2, Cloudflare R2, AWS S3, ...) since free compute
-        // hosts wipe their local disk on every redeploy.
-        'public' => env('UPLOADS_DISK', 'local') === 's3' ? [
-            'driver' => 's3',
-            'key' => env('AWS_ACCESS_KEY_ID'),
-            'secret' => env('AWS_SECRET_ACCESS_KEY'),
-            'region' => env('AWS_DEFAULT_REGION', 'auto'),
-            'bucket' => env('AWS_BUCKET'),
-            'endpoint' => env('AWS_ENDPOINT'),
-            'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', true),
-            'throw' => false,
-            'report' => false,
-        ] : [
+        'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),
             'url' => rtrim(env('APP_URL', 'http://localhost'), '/').'/storage',
