@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Module;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -80,5 +81,21 @@ class ModuleController extends Controller
     {
         $module->delete();
         return response()->json(['message' => 'Module supprimé']);
+    }
+
+    // GET /api/modules/{module}/etudiants — stagiaires of that module's filière,
+    // used by the formateur's grade-entry and attendance-sheet pages.
+    public function etudiants(Request $request, Module $module)
+    {
+        $user = $request->user();
+        if (! $user->isAdmin() && $module->formateur_id !== $user->id) {
+            return response()->json(['message' => 'Non autorisé'], 403);
+        }
+
+        $etudiants = User::whereHas('groupe', fn ($q) => $q->where('filiere_id', $module->filiere_id))
+            ->orderBy('nom')
+            ->get(['id', 'nom', 'prenom', 'email', 'groupe_id']);
+
+        return response()->json($etudiants);
     }
 }

@@ -21,6 +21,11 @@ import Settings from "./pages/Settings";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import VerifyEmail from "./pages/VerifyEmail";
+import Bulletin from "./pages/Bulletin";
+import Notes from "./pages/Notes";
+import Presences from "./pages/Presences";
+import Progression from "./pages/Progression";
+import ExamCalendar from "./pages/ExamCalendar";
 
 
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -148,6 +153,51 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={["admin", "teacher", "student"]}>
               <Settings />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/bulletin"
+          element={
+            <ProtectedRoute allowedRoles={["student"]}>
+              <Bulletin />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/notes"
+          element={
+            <ProtectedRoute allowedRoles={["admin", "teacher"]}>
+              <Notes />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/presences"
+          element={
+            <ProtectedRoute allowedRoles={["admin", "teacher", "student"]}>
+              <Presences />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/progression"
+          element={
+            <ProtectedRoute allowedRoles={["student"]}>
+              <Progression />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/exam-calendar"
+          element={
+            <ProtectedRoute allowedRoles={["student"]}>
+              <ExamCalendar />
             </ProtectedRoute>
           }
         />

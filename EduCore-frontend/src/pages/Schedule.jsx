@@ -11,8 +11,17 @@ import usersApi from "../api/users";
 
 const JOURS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
 const COLORS = ["blue", "green", "yellow", "purple"];
+const TYPES = [
+  { value: "cours", label: "Cours" },
+  { value: "tp", label: "TP" },
+  { value: "controle", label: "Contrôle" },
+  { value: "examen", label: "Examen" },
+];
 
-const EMPTY_FORM = { module_id: "", formateur_id: "", salle_id: "", jour: "Lundi", heure_debut: "", heure_fin: "" };
+const EMPTY_FORM = {
+  module_id: "", formateur_id: "", salle_id: "", jour: "Lundi", heure_debut: "", heure_fin: "",
+  type: "cours", date_examen: "",
+};
 
 export default function Schedule() {
   const { role, user } = useAuth();
@@ -101,7 +110,11 @@ export default function Schedule() {
     setFormError("");
     setSaving(true);
     try {
-      await emploisDuTempsApi.create({ ...form, groupe_id: selectedGroupeId });
+      await emploisDuTempsApi.create({
+        ...form,
+        groupe_id: selectedGroupeId,
+        date_examen: form.type === "cours" ? null : form.date_examen || null,
+      });
       setModalOpen(false);
       loadSeances({ groupe_id: selectedGroupeId });
     } catch (err) {
@@ -132,7 +145,7 @@ export default function Schedule() {
             <FaTimes />
           </button>
         )}
-        <h4>{seance.module?.nom}</h4>
+        <h4>{seance.module?.nom} {seance.type && seance.type !== "cours" && <span className="type-tag">{seance.type}</span>}</h4>
         <p>{isTeacher ? seance.groupe?.nom : `${seance.formateur?.prenom} ${seance.formateur?.nom}`}</p>
         <span>{seance.salle?.nom}</span>
       </div>
@@ -313,6 +326,24 @@ export default function Schedule() {
               onChange={(e) => setForm({ ...form, heure_fin: e.target.value })}
               required
             />
+
+            <select
+              value={form.type}
+              onChange={(e) => setForm({ ...form, type: e.target.value })}
+            >
+              {TYPES.map((t) => (
+                <option key={t.value} value={t.value}>{t.label}</option>
+              ))}
+            </select>
+
+            {form.type !== "cours" && (
+              <input
+                type="date"
+                value={form.date_examen}
+                onChange={(e) => setForm({ ...form, date_examen: e.target.value })}
+                required
+              />
+            )}
 
           </div>
 

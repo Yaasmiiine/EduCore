@@ -9,7 +9,12 @@ class EmploiDuTemps extends Model
     protected $table = 'emplois_du_temps';
 
     protected $fillable = [
-        'groupe_id', 'module_id', 'formateur_id', 'salle_id', 'jour', 'heure_debut', 'heure_fin'
+        'groupe_id', 'module_id', 'formateur_id', 'salle_id', 'jour', 'heure_debut', 'heure_fin',
+        'type', 'date_examen'
+    ];
+
+    protected $casts = [
+        'date_examen' => 'date',
     ];
 
     public function groupe()
@@ -30,5 +35,10 @@ class EmploiDuTemps extends Model
     public function salle()
     {
         return $this->belongsTo(Salle::class);
+    }
+
+    public function presences()
+    {
+        return $this->hasMany(Presence::class, 'emploi_du_temps_id');
     }
 }

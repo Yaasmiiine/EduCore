@@ -1,0 +1,595 @@
+/* Shared styles for the académique pages: Bulletin, Progression, Présences
+   (student + formateur), Notes (formateur), Calendrier des examens. */
+
+.academic-page {
+  flex: 1;
+  padding: 35px;
+  background: var(--color-bg-alt);
+  min-height: 100vh;
+  min-width: 0;
+}
+
+.academic-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.academic-header h1 {
+  font-size: 36px;
+  color: var(--color-heading);
+  margin-bottom: 8px;
+  font-weight: 700;
+}
+
+.academic-header p {
+  color: var(--color-muted);
+  font-size: 16px;
+}
+
+.academic-error {
+  color: var(--color-danger-dark);
+  margin-bottom: 16px;
+}
+
+/* TOOLBAR (module/date selectors on formateur pages) */
+
+.academic-toolbar {
+  display: flex;
+  gap: 16px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  background: white;
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 28px;
+}
+
+.academic-toolbar .field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.academic-toolbar label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-muted);
+}
+
+.academic-toolbar select,
+.academic-toolbar input {
+  height: 46px;
+  padding: 0 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-alt);
+  font-size: 14px;
+  min-width: 220px;
+  outline: none;
+}
+
+.academic-toolbar select:focus,
+.academic-toolbar input:focus {
+  border-color: var(--color-primary);
+  background: white;
+}
+
+/* STAT CARDS */
+
+.academic-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 20px;
+  margin-bottom: 28px;
+}
+
+.academic-stat-card {
+  background: white;
+  border-radius: var(--radius-lg);
+  padding: 22px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid #edf2f7;
+}
+
+.academic-stat-card .stat-label {
+  color: var(--color-muted);
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.academic-stat-card .stat-value {
+  font-size: 30px;
+  font-weight: 700;
+  color: var(--color-heading);
+}
+
+/* MODULE CARD (bulletin / progression / présences groupé par module) */
+
+.academic-module-card {
+  background: white;
+  border-radius: var(--radius-xl);
+  padding: 26px;
+  box-shadow: var(--shadow-md);
+  border: 1px solid #edf2f7;
+  margin-bottom: 22px;
+}
+
+.academic-module-card .module-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.academic-module-card h3 {
+  font-size: 20px;
+  color: var(--color-heading);
+  margin: 0;
+}
+
+.academic-module-card .module-card-header p {
+  color: var(--color-muted);
+  font-size: 14px;
+  margin: 4px 0 0;
+}
+
+/* MOYENNE BADGE */
+
+.moyenne-badge {
+  padding: 8px 16px;
+  border-radius: var(--radius-pill);
+  font-weight: 700;
+  font-size: 15px;
+  white-space: nowrap;
+}
+
+.moyenne-badge.good {
+  background: #dcfce7;
+  color: var(--color-success);
+}
+
+.moyenne-badge.medium {
+  background: #fef3c7;
+  color: var(--color-warning-alt);
+}
+
+.moyenne-badge.low {
+  background: #fee2e2;
+  color: var(--color-danger-dark);
+}
+
+.moyenne-badge.neutral {
+  background: var(--color-bg-soft);
+  color: var(--color-muted);
+}
+
+/* NOTES TABLE */
+
+.academic-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.academic-table th {
+  text-align: left;
+  padding: 12px 14px;
+  font-size: 13px;
+  color: var(--color-muted);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.academic-table td {
+  padding: 14px;
+  border-top: 1px solid #f1f5f9;
+  font-size: 14px;
+  color: var(--color-text);
+}
+
+/* STATUS PILLS (présences) */
+
+.status-pill {
+  padding: 6px 14px;
+  border-radius: var(--radius-pill);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  display: inline-block;
+}
+
+.status-pill.present {
+  background: #dcfce7;
+  color: var(--color-success);
+}
+
+.status-pill.retard {
+  background: #fef3c7;
+  color: var(--color-warning-alt);
+}
+
+.status-pill.absent {
+  background: #fee2e2;
+  color: var(--color-danger-dark);
+}
+
+.status-pill.empty {
+  background: var(--color-bg-soft);
+  color: var(--color-placeholder);
+}
+
+/* PROGRESS BAR */
+
+.progress-bar {
+  width: 100%;
+  height: 10px;
+  border-radius: var(--radius-pill);
+  background: var(--color-bg-soft);
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary);
+  transition: width 0.4s ease;
+}
+
+.progress-bar-fill.good {
+  background: var(--color-success);
+}
+
+.progress-bar-fill.medium {
+  background: var(--color-warning);
+}
+
+.progress-bar-fill.low {
+  background: var(--color-danger);
+}
+
+.academic-progress-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 10px;
+}
+
+.academic-progress-row .progress-label {
+  min-width: 150px;
+  font-size: 14px;
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.academic-progress-row .progress-value {
+  min-width: 50px;
+  text-align: right;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-heading);
+}
+
+/* FORM (grade-entry / attendance-sheet) */
+
+.academic-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: flex-end;
+  background: white;
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 28px;
+}
+
+.academic-form .field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.academic-form select,
+.academic-form input,
+.academic-form textarea {
+  height: 46px;
+  padding: 0 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-alt);
+  font-size: 14px;
+  outline: none;
+}
+
+.academic-form textarea {
+  height: auto;
+  padding: 10px 14px;
+  min-width: 220px;
+  resize: vertical;
+}
+
+.academic-btn {
+  height: 46px;
+  padding: 0 22px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary);
+  color: white;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.academic-btn:hover {
+  background: var(--color-primary-dark);
+}
+
+.academic-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.academic-btn.small {
+  height: 36px;
+  padding: 0 14px;
+  font-size: 13px;
+}
+
+.academic-btn.danger {
+  background: var(--color-bg-soft);
+  color: var(--color-danger-dark);
+}
+
+.academic-btn.danger:hover {
+  background: #fee2e2;
+}
+
+/* ATTENDANCE SHEET LIST */
+
+.attendance-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.attendance-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 18px;
+  background: white;
+  border: 1px solid #edf2f7;
+  border-radius: var(--radius-md);
+  flex-wrap: wrap;
+}
+
+.attendance-row .student-name {
+  font-weight: 600;
+  color: var(--color-heading);
+}
+
+.attendance-row .status-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.attendance-row .status-buttons button {
+  border: 1px solid var(--color-border);
+  background: white;
+  padding: 8px 14px;
+  border-radius: var(--radius-pill);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s;
+  color: var(--color-muted);
+}
+
+.attendance-row .status-buttons button.active.present {
+  background: var(--color-success);
+  color: white;
+  border-color: var(--color-success);
+}
+
+.attendance-row .status-buttons button.active.retard {
+  background: var(--color-warning);
+  color: white;
+  border-color: var(--color-warning);
+}
+
+.attendance-row .status-buttons button.active.absent {
+  background: var(--color-danger);
+  color: white;
+  border-color: var(--color-danger);
+}
+
+/* EXAM CALENDAR */
+
+.exam-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 22px;
+}
+
+.exam-card {
+  background: white;
+  border-radius: var(--radius-xl);
+  padding: 24px;
+  box-shadow: var(--shadow-md);
+  border: 1px solid #edf2f7;
+  border-left: 5px solid var(--color-danger);
+}
+
+.exam-card.type-controle {
+  border-left-color: var(--color-warning);
+}
+
+.exam-card .exam-type {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: var(--radius-pill);
+  background: #fee2e2;
+  color: var(--color-danger-dark);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+
+.exam-card.type-controle .exam-type {
+  background: #fef3c7;
+  color: var(--color-warning-alt);
+}
+
+.exam-card h3 {
+  font-size: 20px;
+  color: var(--color-heading);
+  margin: 0 0 10px;
+}
+
+.exam-card .exam-meta {
+  color: var(--color-muted);
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+
+.exam-card .exam-countdown {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #f1f5f9;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+/* Q&A MESSAGING (embedded in the module files modal) */
+
+.qa-section {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--color-border);
+}
+
+.qa-section h3 {
+  font-size: 17px;
+  color: var(--color-heading);
+  margin: 0 0 14px;
+}
+
+.qa-thread {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 260px;
+  overflow-y: auto;
+  margin-bottom: 14px;
+}
+
+.qa-message {
+  background: var(--color-bg-alt);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+}
+
+.qa-message .qa-message-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.qa-message .qa-author {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--color-heading);
+}
+
+.qa-message .qa-date {
+  font-size: 12px;
+  color: var(--color-placeholder);
+}
+
+.qa-message p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--color-text);
+  white-space: pre-wrap;
+}
+
+.qa-form {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+}
+
+.qa-form textarea {
+  flex: 1;
+  min-height: 46px;
+  max-height: 120px;
+  padding: 12px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-alt);
+  font-size: 14px;
+  outline: none;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.qa-form textarea:focus {
+  border-color: var(--color-primary);
+  background: white;
+}
+
+/* RESPONSIVE */
+
+@media (max-width: 768px) {
+  .academic-page {
+    padding: 20px;
+  }
+
+  .academic-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .academic-header h1 {
+    font-size: 28px;
+  }
+
+  .academic-toolbar,
+  .academic-form {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .academic-toolbar select,
+  .academic-toolbar input,
+  .academic-form select,
+  .academic-form input,
+  .academic-form textarea {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .attendance-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .qa-form {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

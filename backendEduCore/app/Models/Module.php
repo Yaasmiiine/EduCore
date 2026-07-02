@@ -29,4 +29,14 @@ class Module extends Model
     {
         return $this->hasMany(EmploiDuTemps::class);
     }
+
+    public function notes()
+    {
+        return $this->hasMany(Note::class);
+    }
+
+    public function messages()
+    {
+        return $this->hasMany(ModuleMessage::class);
+    }
 }

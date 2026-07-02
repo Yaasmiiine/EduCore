@@ -15,6 +15,10 @@ import {
   FaRobot,
   FaExclamationTriangle,
   FaCog,
+  FaClipboardList,
+  FaUserCheck,
+  FaChartBar,
+  FaCalendarCheck,
 } from "react-icons/fa";
 
 export default function Sidebar() {
@@ -142,6 +146,25 @@ export default function Sidebar() {
         </NavLink>
       </ul>
 
+      {/* SUIVI */}
+      <p className="section-title">SUIVI</p>
+
+      <ul className="menu">
+        <NavLink to="/notes">
+          <li>
+            <FaClipboardList />
+            Notes
+          </li>
+        </NavLink>
+
+        <NavLink to="/presences">
+          <li>
+            <FaUserCheck />
+            Présences
+          </li>
+        </NavLink>
+      </ul>
+
       {/* SETTINGS */}
       <p className="section-title">PARAMÈTRES</p>
 
@@ -180,6 +203,39 @@ export default function Sidebar() {
           <li>
             <FaBullhorn />
             Annonces
+          </li>
+        </NavLink>
+      </ul>
+
+      {/* SUIVI */}
+      <p className="section-title">SUIVI</p>
+
+      <ul className="menu">
+        <NavLink to="/bulletin">
+          <li>
+            <FaClipboardList />
+            Bulletin
+          </li>
+        </NavLink>
+
+        <NavLink to="/presences">
+          <li>
+            <FaUserCheck />
+            Présences
+          </li>
+        </NavLink>
+
+        <NavLink to="/progression">
+          <li>
+            <FaChartBar />
+            Progression
+          </li>
+        </NavLink>
+
+        <NavLink to="/exam-calendar">
+          <li>
+            <FaCalendarCheck />
+            Calendrier des examens
           </li>
         </NavLink>
       </ul>

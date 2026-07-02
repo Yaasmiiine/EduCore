@@ -13,6 +13,9 @@ use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\AiController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\ContactController;
+use App\Http\Controllers\Api\NoteController;
+use App\Http\Controllers\Api\PresenceController;
+use App\Http\Controllers\Api\ModuleMessageController;
 use App\Models\Role;
 use Illuminate\Support\Facades\Route;
 
@@ -114,4 +117,28 @@ Route::middleware('auth:api')->group(function () {
     Route::get('fichiers/{fichier}/download', [FichierController::class, 'download']);
 
     Route::post('ai/chat', [AiController::class, 'chat']);
+
+    // Notes (grades) — formateur/admin enter, stagiaire consults their own bulletin.
+    // Per-module/per-note ownership is enforced inside NoteController.
+    Route::get('bulletin', [NoteController::class, 'bulletin']);
+    Route::middleware('role:admin,formateur')->group(function () {
+        Route::get('modules/{module}/etudiants', [ModuleController::class, 'etudiants']);
+        Route::get('notes', [NoteController::class, 'index']);
+        Route::post('notes', [NoteController::class, 'store']);
+        Route::put('notes/{note}', [NoteController::class, 'update']);
+        Route::delete('notes/{note}', [NoteController::class, 'destroy']);
+    });
+
+    // Présences (attendance) — formateur/admin mark, stagiaire consults their own history.
+    Route::get('presences/mine', [PresenceController::class, 'mine']);
+    Route::middleware('role:admin,formateur')->group(function () {
+        Route::get('presences/seance', [PresenceController::class, 'seance']);
+        Route::post('presences/bulk', [PresenceController::class, 'bulkStore']);
+    });
+
+    // Module Q&A messaging — any user tied to the module (admin, its formateur,
+    // or a stagiaire of its filière) may read/post; ModuleMessageController checks this.
+    Route::get('modules/{module}/messages', [ModuleMessageController::class, 'index']);
+    Route::post('modules/{module}/messages', [ModuleMessageController::class, 'store']);
+    Route::delete('module-messages/{message}', [ModuleMessageController::class, 'destroy']);
 });

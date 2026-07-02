@@ -69,6 +69,23 @@ class User extends Authenticatable implements JWTSubject
         return $this->hasMany(Notification::class);
     }
 
+    // Notes received as a stagiaire.
+    public function notes()
+    {
+        return $this->hasMany(Note::class, 'user_id');
+    }
+
+    // Presences recorded as a stagiaire.
+    public function presences()
+    {
+        return $this->hasMany(Presence::class, 'user_id');
+    }
+
+    public function moduleMessages()
+    {
+        return $this->hasMany(ModuleMessage::class);
+    }
+
     // Helpers
     public function isAdmin()
     {

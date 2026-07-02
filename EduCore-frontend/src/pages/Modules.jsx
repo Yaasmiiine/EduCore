@@ -1,12 +1,14 @@
 // src/pages/Modules.jsx
 import { useEffect, useMemo, useState } from "react";
 import "../styles/modules.css";
+import "../styles/academique.css";
 import Sidebar from "../components/Sidebar";
 import Pagination from "../components/Pagination";
 import modulesApi from "../api/modules";
 import filieresApi from "../api/filieres";
 import usersApi from "../api/users";
 import fichiersApi from "../api/fichiers";
+import moduleMessagesApi from "../api/moduleMessages";
 import { useAuth } from "../context/AuthContext.jsx";
 
 import {
@@ -22,6 +24,7 @@ import {
   FaUpload,
   FaDownload,
   FaMagic,
+  FaPaperPlane,
 } from "react-icons/fa";
 
 const CARD_COLORS = [
@@ -66,6 +69,13 @@ export default function Modules() {
   const [uploading, setUploading] = useState(false);
   const [generatingId, setGeneratingId] = useState(null);
   const [downloadingId, setDownloadingId] = useState(null);
+
+  // Q&A messaging (per module)
+  const [qaMessages, setQaMessages] = useState([]);
+  const [qaLoading, setQaLoading] = useState(false);
+  const [qaError, setQaError] = useState("");
+  const [qaText, setQaText] = useState("");
+  const [qaSending, setQaSending] = useState(false);
 
   const loadModules = () => {
     setLoading(true);
@@ -165,6 +175,41 @@ export default function Modules() {
       .then(setFiles)
       .catch(() => setFileError("Impossible de charger les fichiers."))
       .finally(() => setFilesLoading(false));
+
+    setQaError("");
+    setQaText("");
+    setQaLoading(true);
+    moduleMessagesApi
+      .list(module.id)
+      .then(setQaMessages)
+      .catch(() => setQaError("Impossible de charger les questions."))
+      .finally(() => setQaLoading(false));
+  };
+
+  const handleSendMessage = async (e) => {
+    e.preventDefault();
+    if (!qaText.trim()) return;
+    setQaSending(true);
+    setQaError("");
+    try {
+      const message = await moduleMessagesApi.create(filesModule.id, qaText.trim());
+      setQaMessages((prev) => [...prev, message]);
+      setQaText("");
+    } catch {
+      setQaError("Impossible d'envoyer le message.");
+    } finally {
+      setQaSending(false);
+    }
+  };
+
+  const handleDeleteMessage = async (message) => {
+    if (!window.confirm("Supprimer ce message ?")) return;
+    try {
+      await moduleMessagesApi.remove(message.id);
+      setQaMessages((prev) => prev.filter((m) => m.id !== message.id));
+    } catch {
+      setQaError("Impossible de supprimer ce message.");
+    }
   };
 
   const handleUpload = async (e) => {
@@ -511,6 +556,54 @@ export default function Modules() {
                 ))}
               </ul>
             )}
+
+            <div className="qa-section">
+              <h3>Questions sur ce module</h3>
+
+              {qaError && <p style={{ color: "#dc2626" }}>{qaError}</p>}
+
+              {qaLoading ? (
+                <p>Chargement...</p>
+              ) : qaMessages.length === 0 ? (
+                <p>Aucune question pour le moment. Soyez le premier à poser une question !</p>
+              ) : (
+                <div className="qa-thread">
+                  {qaMessages.map((m) => (
+                    <div className="qa-message" key={m.id}>
+                      <div className="qa-message-header">
+                        <span className="qa-author">{m.user?.prenom} {m.user?.nom}</span>
+                        <span className="qa-date">
+                          {new Date(m.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                          {(isAdmin || m.user_id === user?.id) && (
+                            <button
+                              className="file-action delete"
+                              style={{ marginLeft: 8, height: 24, padding: "0 6px" }}
+                              onClick={() => handleDeleteMessage(m)}
+                              title="Supprimer"
+                            >
+                              <FaTrash />
+                            </button>
+                          )}
+                        </span>
+                      </div>
+                      <p>{m.message}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <form className="qa-form" onSubmit={handleSendMessage}>
+                <textarea
+                  placeholder="Posez votre question..."
+                  value={qaText}
+                  onChange={(e) => setQaText(e.target.value)}
+                  required
+                />
+                <button className="academic-btn" disabled={qaSending}>
+                  <FaPaperPlane /> {qaSending ? "..." : "Envoyer"}
+                </button>
+              </form>
+            </div>
           </div>
         </div>
       )}

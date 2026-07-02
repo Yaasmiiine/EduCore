@@ -27,6 +27,10 @@ class EmploiDuTempsController extends Controller
         if ($request->has('formateur_id')) {
             $query->where('formateur_id', $request->formateur_id);
         }
+        // Filter by type (e.g. "examen" for the exam calendar)
+        if ($request->filled('type')) {
+            $query->where('type', $request->string('type'));
+        }
 
         return response()->json($query->get());
     }
@@ -41,6 +45,8 @@ class EmploiDuTempsController extends Controller
             'jour'         => 'required|in:Lundi,Mardi,Mercredi,Jeudi,Vendredi,Samedi',
             'heure_debut'  => 'required|date_format:H:i',
             'heure_fin'    => 'required|date_format:H:i|after:heure_debut',
+            'type'         => 'nullable|in:cours,examen,tp,controle',
+            'date_examen'  => 'nullable|date',
         ]);
 
         if ($validator->fails()) {
@@ -58,8 +64,18 @@ class EmploiDuTempsController extends Controller
 
     public function update(Request $request, EmploiDuTemps $emploiDuTemps)
     {
+        $validator = Validator::make($request->all(), [
+            'type'        => 'sometimes|nullable|in:cours,examen,tp,controle',
+            'date_examen' => 'sometimes|nullable|date',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
         $emploiDuTemps->update($request->only(
-            'groupe_id', 'module_id', 'formateur_id', 'salle_id', 'jour', 'heure_debut', 'heure_fin'
+            'groupe_id', 'module_id', 'formateur_id', 'salle_id', 'jour', 'heure_debut', 'heure_fin',
+            'type', 'date_examen'
         ));
         return response()->json($emploiDuTemps->load('groupe', 'module', 'formateur', 'salle'));
     }
