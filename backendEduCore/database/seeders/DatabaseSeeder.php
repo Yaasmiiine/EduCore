@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Annonce;
+use App\Models\Devoir;
 use App\Models\EmploiDuTemps;
 use App\Models\Filiere;
 use App\Models\Groupe;
@@ -12,6 +13,7 @@ use App\Models\Note;
 use App\Models\Presence;
 use App\Models\Role;
 use App\Models\Salle;
+use App\Models\TypeEvaluation;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -164,5 +166,16 @@ class DatabaseSeeder extends Seeder
         ModuleMessage::create(['module_id' => $modDevWeb->id, 'user_id' => $youssef->id, 'message' => 'Bonjour, est-ce que le TP de la semaine prochaine porte sur React ou sur Node.js ?']);
         ModuleMessage::create(['module_id' => $modDevWeb->id, 'user_id' => $mohammed->id, 'message' => 'Bonjour Youssef, ce sera sur React côté front-end. Je posterai le support avant vendredi.']);
         ModuleMessage::create(['module_id' => $modDevWeb->id, 'user_id' => $sara->id, 'message' => 'Merci pour la précision, est-ce qu’on peut travailler en binôme ?']);
+
+        // Types d'évaluation — coefficients par défaut utilisés par le formulaire de saisie des notes
+        TypeEvaluation::create(['nom' => 'TP', 'coefficient_defaut' => 1]);
+        TypeEvaluation::create(['nom' => 'Devoir', 'coefficient_defaut' => 1]);
+        TypeEvaluation::create(['nom' => 'Contrôle continu', 'coefficient_defaut' => 1.5]);
+        TypeEvaluation::create(['nom' => 'Examen', 'coefficient_defaut' => 2]);
+
+        // Devoirs — pas de soumissions pré-créées (elles nécessiteraient un vrai
+        // fichier sur disque) ; les étudiants peuvent en déposer une réelle en testant.
+        Devoir::create(['module_id' => $modDevWeb->id, 'formateur_id' => $mohammed->id, 'titre' => 'Maquette de la page d’accueil', 'description' => 'Réaliser une maquette HTML/CSS responsive de la page d’accueil vue en cours.', 'date_limite' => now()->addDays(10)]);
+        Devoir::create(['module_id' => $modBdd->id, 'formateur_id' => $mohammed->id, 'titre' => 'Modélisation MCD', 'description' => 'Proposer un modèle conceptuel de données pour le projet fil rouge.', 'date_limite' => now()->addDays(4)]);
     }
 }

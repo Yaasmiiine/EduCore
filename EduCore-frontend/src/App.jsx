@@ -26,6 +26,10 @@ import Notes from "./pages/Notes";
 import Presences from "./pages/Presences";
 import Progression from "./pages/Progression";
 import ExamCalendar from "./pages/ExamCalendar";
+import MyStudents from "./pages/MyStudents";
+import Devoirs from "./pages/Devoirs";
+import ActivityLog from "./pages/ActivityLog";
+import TypesEvaluation from "./pages/TypesEvaluation";
 
 
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -198,6 +202,42 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={["student"]}>
               <ExamCalendar />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/mes-etudiants"
+          element={
+            <ProtectedRoute allowedRoles={["teacher"]}>
+              <MyStudents />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/devoirs"
+          element={
+            <ProtectedRoute allowedRoles={["admin", "teacher", "student"]}>
+              <Devoirs />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/activity-log"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <ActivityLog />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/types-evaluation"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <TypesEvaluation />
             </ProtectedRoute>
           }
         />

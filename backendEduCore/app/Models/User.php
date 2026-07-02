@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\LogsActivity;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use PHPOpenSourceSaver\JWTAuth\Contracts\JWTSubject;
 
 class User extends Authenticatable implements JWTSubject
 {
-    use Notifiable;
+    use Notifiable, LogsActivity;
 
     protected $fillable = [
         'role_id', 'groupe_id', 'nom', 'prenom', 'email', 'password', 'photo', 'email_verified_at'
@@ -100,5 +101,17 @@ class User extends Authenticatable implements JWTSubject
     public function isStagiaire()
     {
         return $this->role->nom === 'stagiaire';
+    }
+
+    protected function activityDescription(string $action): string
+    {
+        $verbe = match ($action) {
+            'created' => 'créé',
+            'updated' => 'modifié',
+            'deleted' => 'supprimé',
+            default   => $action,
+        };
+
+        return "Utilisateur « {$this->prenom} {$this->nom} » {$verbe}";
     }
 }

@@ -11,11 +11,14 @@ use Illuminate\Support\Facades\Validator;
 
 class NoteController extends Controller
 {
-    // GET /api/notes?module_id=X — formateur (own module) or admin: grade-entry list.
+    // GET /api/notes?module_id=X&groupe_id=Y — formateur (own module) or admin:
+    // grade-entry list, optionally narrowed to one groupe (a module is often
+    // taught to several groupes at once).
     public function index(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'module_id' => 'required|exists:modules,id',
+            'groupe_id' => 'nullable|exists:groupes,id',
         ]);
 
         if ($validator->fails()) {
@@ -29,10 +32,13 @@ class NoteController extends Controller
             return response()->json(['message' => 'Non autorisé'], 403);
         }
 
-        $notes = Note::with('stagiaire')
-            ->where('module_id', $module->id)
-            ->orderByDesc('date_evaluation')
-            ->get();
+        $query = Note::with('stagiaire')->where('module_id', $module->id);
+
+        if ($request->filled('groupe_id')) {
+            $query->whereHas('stagiaire', fn ($q) => $q->where('groupe_id', $request->integer('groupe_id')));
+        }
+
+        $notes = $query->orderByDesc('date_evaluation')->get();
 
         return response()->json($notes);
     }

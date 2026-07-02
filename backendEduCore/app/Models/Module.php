@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\LogsActivity;
 use Illuminate\Database\Eloquent\Model;
 
 class Module extends Model
 {
+    use LogsActivity;
+
     protected $fillable = [
         'filiere_id', 'formateur_id', 'nom', 'code', 'description', 'heures_total'
     ];

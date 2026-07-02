@@ -5,5 +5,6 @@ const base = makeResource("modules");
 
 export default {
   ...base,
-  etudiants: (moduleId) => client.get(`/modules/${moduleId}/etudiants`).then((r) => r.data),
+  etudiants: (moduleId, groupeId) =>
+    client.get(`/modules/${moduleId}/etudiants`, { params: { groupe_id: groupeId || undefined } }).then((r) => r.data),
 };

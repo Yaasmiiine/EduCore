@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/dashboard.css";
+import "../styles/academique.css";
 import Sidebar from "../components/Sidebar";
 import { useAuth } from "../context/AuthContext.jsx";
 import modulesApi from "../api/modules";
 import emploisDuTempsApi from "../api/emploisDuTemps";
 import annoncesApi from "../api/annonces";
+import formateurApi from "../api/formateur";
 
 import {
   FaBookOpen,
@@ -46,16 +48,23 @@ export default function TeacherDashboard() {
   const [modules, setModules] = useState([]);
   const [seances, setSeances] = useState([]);
   const [annonces, setAnnonces] = useState([]);
+  const [statistiques, setStatistiques] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
     if (!user) return;
-    Promise.all([modulesApi.list(), emploisDuTempsApi.list({ formateur_id: user.id }), annoncesApi.list()])
-      .then(([modulesData, seancesData, annoncesData]) => {
+    Promise.all([
+      modulesApi.list(),
+      emploisDuTempsApi.list({ formateur_id: user.id }),
+      annoncesApi.list(),
+      formateurApi.mesStatistiques(),
+    ])
+      .then(([modulesData, seancesData, annoncesData, statsData]) => {
         setModules(modulesData.filter((m) => m.formateur_id === user.id));
         setSeances(seancesData);
         setAnnonces(annoncesData.filter((a) => a.auteur_id === user.id));
+        setStatistiques(statsData);
         setError("");
       })
       .catch(() => setError("Impossible de charger le tableau de bord."))
@@ -175,6 +184,40 @@ export default function TeacherDashboard() {
           </div>
 
         </div>
+
+        {statistiques.length > 0 && (
+          <div className="academic-module-card" style={{ marginTop: 24 }}>
+            <div className="module-card-header">
+              <div>
+                <h3>Statistiques de classe</h3>
+                <p>Moyenne, taux de réussite et présence par module</p>
+              </div>
+            </div>
+
+            <table className="academic-table">
+              <thead>
+                <tr>
+                  <th>Module</th>
+                  <th>Effectif</th>
+                  <th>Moyenne générale</th>
+                  <th>Taux de réussite</th>
+                  <th>Taux de présence</th>
+                </tr>
+              </thead>
+              <tbody>
+                {statistiques.map((s) => (
+                  <tr key={s.module.id}>
+                    <td>{s.module.nom}</td>
+                    <td>{s.effectif}</td>
+                    <td>{s.moyenne_generale !== null ? `${s.moyenne_generale}/20` : "—"}</td>
+                    <td>{s.taux_reussite !== null ? `${s.taux_reussite}%` : "—"}</td>
+                    <td>{s.taux_presence !== null ? `${s.taux_presence}%` : "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
 
       </main>
 

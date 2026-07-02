@@ -14,6 +14,7 @@ export default function AttendanceSheet() {
 
   const [modules, setModules] = useState([]);
   const [moduleId, setModuleId] = useState("");
+  const [groupeId, setGroupeId] = useState("");
   const [seances, setSeances] = useState([]);
   const [seanceId, setSeanceId] = useState("");
   const [date, setDate] = useState(today());
@@ -44,9 +45,27 @@ export default function AttendanceSheet() {
     [seances, moduleId]
   );
 
-  useEffect(() => {
-    setSeanceId(seancesForModule[0] ? String(seancesForModule[0].id) : "");
+  // The groupes a formateur can pick from a module's actual scheduled
+  // séances — a module taught to several classes would otherwise dump every
+  // groupe's séances into one long, hard-to-scan list.
+  const groupesForModule = useMemo(() => {
+    const seen = new Map();
+    seancesForModule.forEach((s) => {
+      if (s.groupe && !seen.has(s.groupe_id)) seen.set(s.groupe_id, s.groupe);
+    });
+    return [...seen.values()];
   }, [seancesForModule]);
+
+  useEffect(() => setGroupeId(""), [moduleId]);
+
+  const seancesForModuleAndGroupe = useMemo(
+    () => seancesForModule.filter((s) => !groupeId || String(s.groupe_id) === groupeId),
+    [seancesForModule, groupeId]
+  );
+
+  useEffect(() => {
+    setSeanceId(seancesForModuleAndGroupe[0] ? String(seancesForModuleAndGroupe[0].id) : "");
+  }, [seancesForModuleAndGroupe]);
 
   const loadSheet = () => {
     if (!seanceId || !date) return;
@@ -112,10 +131,20 @@ export default function AttendanceSheet() {
           </div>
 
           <div className="field">
+            <label>Groupe</label>
+            <select value={groupeId} onChange={(e) => setGroupeId(e.target.value)}>
+              <option value="">Tous les groupes</option>
+              {groupesForModule.map((g) => (
+                <option key={g.id} value={g.id}>{g.nom}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="field">
             <label>Séance</label>
             <select value={seanceId} onChange={(e) => setSeanceId(e.target.value)}>
-              {seancesForModule.length === 0 && <option value="">Aucune séance</option>}
-              {seancesForModule.map((s) => (
+              {seancesForModuleAndGroupe.length === 0 && <option value="">Aucune séance</option>}
+              {seancesForModuleAndGroupe.map((s) => (
                 <option key={s.id} value={s.id}>{s.jour} {s.heure_debut?.slice(0, 5)}-{s.heure_fin?.slice(0, 5)} ({s.groupe?.nom})</option>
               ))}
             </select>

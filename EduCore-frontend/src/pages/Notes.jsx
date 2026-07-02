@@ -1,16 +1,16 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { FaTrash, FaEdit } from "react-icons/fa";
 import Sidebar from "../components/Sidebar";
 import "../styles/academique.css";
 import notesApi from "../api/notes";
 import modulesApi from "../api/modules";
+import groupesApi from "../api/groupes";
+import typesEvaluationApi from "../api/typesEvaluation";
 import { useAuth } from "../context/AuthContext.jsx";
-
-const TYPES = ["TP", "Contrôle continu", "Examen", "Devoir"];
 
 const EMPTY_FORM = {
   user_id: "",
-  type: TYPES[0],
+  type: "",
   valeur: "",
   coefficient: "1",
   commentaire: "",
@@ -23,8 +23,11 @@ export default function Notes() {
 
   const [modules, setModules] = useState([]);
   const [moduleId, setModuleId] = useState("");
+  const [groupes, setGroupes] = useState([]);
+  const [groupeId, setGroupeId] = useState("");
   const [etudiants, setEtudiants] = useState([]);
   const [notes, setNotes] = useState([]);
+  const [types, setTypes] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -42,13 +45,36 @@ export default function Notes() {
         if (mine[0]) setModuleId(String(mine[0].id));
       })
       .catch(() => setError("Impossible de charger les modules."));
+
+    groupesApi.list().then(setGroupes).catch(() => setError("Impossible de charger les groupes."));
+
+    typesEvaluationApi
+      .list()
+      .then((data) => {
+        setTypes(data);
+        if (data[0]) {
+          setForm((f) => ({ ...f, type: data[0].nom, coefficient: String(data[0].coefficient_defaut) }));
+        }
+      })
+      .catch(() => setError("Impossible de charger les types d'évaluation."));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const selectedModule = modules.find((m) => String(m.id) === String(moduleId));
+
+  const groupesForModule = useMemo(() => {
+    if (!selectedModule) return [];
+    return groupes.filter((g) => g.filiere_id === selectedModule.filiere_id);
+  }, [groupes, selectedModule]);
+
+  // The groupe list depends on which module is selected, so reset it whenever
+  // the module changes rather than keeping a stale groupe from another filière.
+  useEffect(() => setGroupeId(""), [moduleId]);
 
   const loadModuleData = () => {
     if (!moduleId) return;
     setLoading(true);
-    Promise.all([modulesApi.etudiants(moduleId), notesApi.listForModule(moduleId)])
+    Promise.all([modulesApi.etudiants(moduleId, groupeId), notesApi.listForModule(moduleId, groupeId)])
       .then(([etudiantsData, notesData]) => {
         setEtudiants(etudiantsData);
         setNotes(notesData);
@@ -58,15 +84,19 @@ export default function Notes() {
       .finally(() => setLoading(false));
   };
 
-  useEffect(loadModuleData, [moduleId]);
+  useEffect(loadModuleData, [moduleId, groupeId]);
 
   const resetForm = () => {
-    setForm(EMPTY_FORM);
+    setForm(
+      types[0]
+        ? { ...EMPTY_FORM, type: types[0].nom, coefficient: String(types[0].coefficient_defaut) }
+        : EMPTY_FORM
+    );
     setEditingId(null);
     setFormError("");
   };
 
-  useEffect(resetForm, [moduleId]);
+  useEffect(resetForm, [moduleId, groupeId]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -125,8 +155,6 @@ export default function Notes() {
     }
   };
 
-  const selectedModule = modules.find((m) => String(m.id) === String(moduleId));
-
   const etudiantName = (id) => {
     const e = etudiants.find((et) => et.id === id);
     return e ? `${e.prenom} ${e.nom}` : "—";
@@ -155,6 +183,16 @@ export default function Notes() {
               ))}
             </select>
           </div>
+
+          <div className="field">
+            <label>Groupe</label>
+            <select value={groupeId} onChange={(e) => setGroupeId(e.target.value)}>
+              <option value="">Tous les groupes</option>
+              {groupesForModule.map((g) => (
+                <option key={g.id} value={g.id}>{g.nom}</option>
+              ))}
+            </select>
+          </div>
         </div>
 
         {moduleId && (
@@ -177,9 +215,20 @@ export default function Notes() {
 
             <div className="field">
               <label>Type</label>
-              <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
-                {TYPES.map((t) => (
-                  <option key={t} value={t}>{t}</option>
+              <select
+                value={form.type}
+                onChange={(e) => {
+                  const selected = types.find((t) => t.nom === e.target.value);
+                  setForm({
+                    ...form,
+                    type: e.target.value,
+                    coefficient: selected ? String(selected.coefficient_defaut) : form.coefficient,
+                  });
+                }}
+              >
+                {types.length === 0 && <option value="">Aucun type</option>}
+                {types.map((t) => (
+                  <option key={t.id} value={t.nom}>{t.nom}</option>
                 ))}
               </select>
             </div>
@@ -246,7 +295,7 @@ export default function Notes() {
           <div className="academic-module-card">
             <div className="module-card-header">
               <div>
-                <h3>{selectedModule?.nom}</h3>
+                <h3>{selectedModule?.nom}{groupeId && ` — ${groupesForModule.find((g) => String(g.id) === groupeId)?.nom || ""}`}</h3>
                 <p>{notes.length} note(s) enregistrée(s)</p>
               </div>
             </div>

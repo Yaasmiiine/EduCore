@@ -16,6 +16,11 @@ use App\Http\Controllers\Api\ContactController;
 use App\Http\Controllers\Api\NoteController;
 use App\Http\Controllers\Api\PresenceController;
 use App\Http\Controllers\Api\ModuleMessageController;
+use App\Http\Controllers\Api\FormateurController;
+use App\Http\Controllers\Api\DevoirController;
+use App\Http\Controllers\Api\SoumissionController;
+use App\Http\Controllers\Api\ActivityLogController;
+use App\Http\Controllers\Api\TypeEvaluationController;
 use App\Models\Role;
 use Illuminate\Support\Facades\Route;
 
@@ -141,4 +146,33 @@ Route::middleware('auth:api')->group(function () {
     Route::get('modules/{module}/messages', [ModuleMessageController::class, 'index']);
     Route::post('modules/{module}/messages', [ModuleMessageController::class, 'store']);
     Route::delete('module-messages/{message}', [ModuleMessageController::class, 'destroy']);
+
+    // Formateur personal reports — their own students and per-module stats.
+    Route::middleware('role:formateur')->group(function () {
+        Route::get('mes-etudiants', [FormateurController::class, 'mesEtudiants']);
+        Route::get('mes-statistiques', [FormateurController::class, 'mesStatistiques']);
+    });
+
+    // Devoirs & soumissions — everyone reads their own scope (checked in
+    // controller), formateur/admin manage, stagiaire submits.
+    Route::get('devoirs', [DevoirController::class, 'index']);
+    Route::middleware('role:admin,formateur')->group(function () {
+        Route::post('devoirs', [DevoirController::class, 'store']);
+        Route::put('devoirs/{devoir}', [DevoirController::class, 'update']);
+        Route::delete('devoirs/{devoir}', [DevoirController::class, 'destroy']);
+        Route::get('devoirs/{devoir}/soumissions', [SoumissionController::class, 'index']);
+    });
+    Route::middleware('role:stagiaire')->post('devoirs/{devoir}/soumissions', [SoumissionController::class, 'store']);
+    Route::get('soumissions/{soumission}/download', [SoumissionController::class, 'download']);
+
+    // Journal d'activité — admin only.
+    Route::middleware('role:admin')->get('activity-logs', [ActivityLogController::class, 'index']);
+
+    // Types d'évaluation — everyone reads (feeds the Notes entry form), admin manages.
+    Route::get('types-evaluation', [TypeEvaluationController::class, 'index']);
+    Route::middleware('role:admin')->group(function () {
+        Route::post('types-evaluation', [TypeEvaluationController::class, 'store']);
+        Route::put('types-evaluation/{typeEvaluation}', [TypeEvaluationController::class, 'update']);
+        Route::delete('types-evaluation/{typeEvaluation}', [TypeEvaluationController::class, 'destroy']);
+    });
 });

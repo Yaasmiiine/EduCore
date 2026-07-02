@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\LogsActivity;
 use Illuminate\Database\Eloquent\Model;
 
 class EmploiDuTemps extends Model
 {
+    use LogsActivity;
+
     protected $table = 'emplois_du_temps';
 
     protected $fillable = [
@@ -40,5 +43,17 @@ class EmploiDuTemps extends Model
     public function presences()
     {
         return $this->hasMany(Presence::class, 'emploi_du_temps_id');
+    }
+
+    protected function activityDescription(string $action): string
+    {
+        $verbe = match ($action) {
+            'created' => 'créée',
+            'updated' => 'modifiée',
+            'deleted' => 'supprimée',
+            default   => $action,
+        };
+
+        return "Séance « {$this->module?->nom} — {$this->jour} » {$verbe}";
     }
 }

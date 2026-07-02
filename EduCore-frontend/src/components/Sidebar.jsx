@@ -19,6 +19,10 @@ import {
   FaUserCheck,
   FaChartBar,
   FaCalendarCheck,
+  FaUserGraduate,
+  FaTasks,
+  FaHistory,
+  FaBalanceScale,
 } from "react-icons/fa";
 
 export default function Sidebar() {
@@ -82,6 +86,13 @@ export default function Sidebar() {
           </li>
         </NavLink>
 
+        <NavLink to="/types-evaluation">
+          <li>
+            <FaBalanceScale />
+            Types d'évaluation
+          </li>
+        </NavLink>
+
       </ul>
       {/* AI */}
       <p className="section-title">AI & AUTOMATION</p>
@@ -98,6 +109,18 @@ export default function Sidebar() {
           <li>
             <FaExclamationTriangle />
             Détection de conflits
+          </li>
+        </NavLink>
+      </ul>
+
+      {/* SYSTÈME */}
+      <p className="section-title">SYSTÈME</p>
+
+      <ul className="menu">
+        <NavLink to="/activity-log">
+          <li>
+            <FaHistory />
+            Journal d'activité
           </li>
         </NavLink>
       </ul>
@@ -144,6 +167,13 @@ export default function Sidebar() {
             Annonces
           </li>
         </NavLink>
+
+        <NavLink to="/mes-etudiants">
+          <li>
+            <FaUserGraduate />
+            Mes étudiants
+          </li>
+        </NavLink>
       </ul>
 
       {/* SUIVI */}
@@ -161,6 +191,13 @@ export default function Sidebar() {
           <li>
             <FaUserCheck />
             Présences
+          </li>
+        </NavLink>
+
+        <NavLink to="/devoirs">
+          <li>
+            <FaTasks />
+            Devoirs
           </li>
         </NavLink>
       </ul>
@@ -222,6 +259,13 @@ export default function Sidebar() {
           <li>
             <FaUserCheck />
             Présences
+          </li>
+        </NavLink>
+
+        <NavLink to="/devoirs">
+          <li>
+            <FaTasks />
+            Devoirs
           </li>
         </NavLink>
 
