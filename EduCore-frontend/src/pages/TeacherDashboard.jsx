@@ -26,6 +26,7 @@ import {
 } from "chart.js";
 
 import { Doughnut, Bar } from "react-chartjs-2";
+import { doughnutChartOptions, barChartOptions } from "../utils/chartAnimations";
 
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement);
 
@@ -164,13 +165,13 @@ export default function TeacherDashboard() {
           {modules.length > 0 && (
             <div className="chart-box">
               <h3>Heures par module</h3>
-              <Doughnut data={heuresParModule} />
+              <Doughnut data={heuresParModule} options={doughnutChartOptions} />
             </div>
           )}
 
           <div className="chart-box wide">
             <h3>Séances par jour</h3>
-            <Bar data={seancesParJour} />
+            <Bar data={seancesParJour} options={barChartOptions} />
           </div>
 
         </div>

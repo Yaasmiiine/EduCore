@@ -23,6 +23,7 @@ import {
 } from "chart.js";
 
 import { Doughnut } from "react-chartjs-2";
+import { doughnutChartOptions } from "../utils/chartAnimations";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
@@ -165,7 +166,7 @@ export default function StudentDashboard() {
           <div className="charts">
             <div className="chart-box">
               <h3>Répartition des heures par module</h3>
-              <Doughnut data={heuresParModule} />
+              <Doughnut data={heuresParModule} options={doughnutChartOptions} />
             </div>
           </div>
         )}

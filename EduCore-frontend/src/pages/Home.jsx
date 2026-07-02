@@ -6,7 +6,10 @@ import {
   FaFacebookF,
   FaInstagram,
   FaLinkedinIn,
-  FaTwitter
+  FaTwitter,
+  FaEnvelope,
+  FaPhoneAlt,
+  FaMapMarkerAlt
 } from "react-icons/fa";
 
 import {
@@ -375,18 +378,27 @@ export default function Home() {
     <div className="contact-info">
 
       <div className="contact-card">
-        <h3>Email</h3>
-        <p>contact@educore.com</p>
+        <FaEnvelope />
+        <div>
+          <h3>Email</h3>
+          <p>contact@educore.com</p>
+        </div>
       </div>
 
       <div className="contact-card">
-        <h3>Téléphone</h3>
-        <p>+212 6 00 00 00 00</p>
+        <FaPhoneAlt />
+        <div>
+          <h3>Téléphone</h3>
+          <p>+212 6 00 00 00 00</p>
+        </div>
       </div>
 
       <div className="contact-card">
-        <h3>Adresse</h3>
-        <p>Agadir, Maroc</p>
+        <FaMapMarkerAlt />
+        <div>
+          <h3>Adresse</h3>
+          <p>Agadir, Maroc</p>
+        </div>
       </div>
 
     </div>

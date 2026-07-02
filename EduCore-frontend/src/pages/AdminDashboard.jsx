@@ -31,6 +31,7 @@ import {
 } from "chart.js";
 
 import { Doughnut } from "react-chartjs-2";
+import { doughnutChartOptions } from "../utils/chartAnimations";
 
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale);
 
@@ -156,13 +157,13 @@ export default function AdminDashboard() {
         <div className="charts">
           <div className="chart-box">
             <h3>Répartition des utilisateurs</h3>
-            <Doughnut data={userChart} />
+            <Doughnut data={userChart} options={doughnutChartOptions} />
           </div>
 
           {filiereChart && (
             <div className="chart-box">
               <h3>Modules par filière</h3>
-              <Doughnut data={filiereChart} />
+              <Doughnut data={filiereChart} options={doughnutChartOptions} />
             </div>
           )}
         </div>
