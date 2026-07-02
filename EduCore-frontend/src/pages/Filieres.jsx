@@ -1,11 +1,13 @@
 // Filieres.jsx
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 import "../styles/filieres.css";
 
 import Sidebar from "../components/Sidebar";
+import Pagination from "../components/Pagination";
 import filieresApi from "../api/filieres";
+import groupesApi from "../api/groupes";
 
 import {
   FaSearch,
@@ -20,6 +22,8 @@ const EMPTY_FORM = { nom: "", code: "", description: "" };
 
 export default function Filieres() {
   const [filieres, setFilieres] = useState([]);
+  const [meta, setMeta] = useState(null);
+  const [totalGroupes, setTotalGroupes] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -29,19 +33,37 @@ export default function Filieres() {
   const [formError, setFormError] = useState("");
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
 
   const loadFilieres = () => {
     setLoading(true);
     return filieresApi
-      .list()
-      .then(setFilieres)
+      .list({ page, per_page: 10, search: search || undefined })
+      .then((res) => {
+        setFilieres(res.data);
+        setMeta(res);
+        setError("");
+      })
       .catch(() => setError("Impossible de charger les filières."))
       .finally(() => setLoading(false));
   };
 
+  // The overall groupe count is fetched independently so it stays accurate
+  // regardless of which filières page is currently shown.
   useEffect(() => {
-    loadFilieres();
+    groupesApi.list().then((data) => setTotalGroupes(data.length)).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    const t = setTimeout(loadFilieres, search ? 350 : 0);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, search]);
+
+  const handleSearchChange = (e) => {
+    setSearch(e.target.value);
+    setPage(1);
+  };
 
   const openCreateModal = () => {
     setEditingId(null);
@@ -81,21 +103,11 @@ export default function Filieres() {
     if (!window.confirm(`Supprimer la filière "${filiere.nom}" ?`)) return;
     try {
       await filieresApi.remove(filiere.id);
-      setFilieres((prev) => prev.filter((f) => f.id !== filiere.id));
+      loadFilieres();
     } catch {
       setError("Impossible de supprimer cette filière.");
     }
   };
-
-  const filteredFilieres = useMemo(
-    () =>
-      filieres.filter((f) =>
-        `${f.nom} ${f.code}`.toLowerCase().includes(search.toLowerCase())
-      ),
-    [filieres, search]
-  );
-
-  const totalGroupes = filieres.reduce((sum, f) => sum + (f.groupes?.length || 0), 0);
 
   return (
   <div className="dashboard">
@@ -230,7 +242,7 @@ export default function Filieres() {
           </div>
 
           <div>
-            <h2>{filieres.length}</h2>
+            <h2>{meta?.total ?? 0}</h2>
             <p>Total filières</p>
           </div>
 
@@ -265,7 +277,7 @@ export default function Filieres() {
               type="text"
               placeholder="Rechercher une filière..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={handleSearchChange}
             />
 
           </div>
@@ -292,7 +304,11 @@ export default function Filieres() {
 
           <tbody>
 
-            {filteredFilieres.map((filiere) => (
+            {filieres.length === 0 && (
+              <tr><td colSpan={5} style={{ padding: 24, textAlign: "center", color: "#94a3b8" }}>Aucune filière trouvée.</td></tr>
+            )}
+
+            {filieres.map((filiere) => (
 
               <tr key={filiere.id}>
 
@@ -329,6 +345,13 @@ export default function Filieres() {
           </tbody>
 
         </table>
+        )}
+
+        {!loading && meta && (
+          <div className="table-footer">
+            <p>{meta.total} résultat(s) — page {meta.current_page} / {meta.last_page}</p>
+            <Pagination meta={meta} onPageChange={setPage} />
+          </div>
         )}
 
       </div>

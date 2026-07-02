@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import "../styles/groups.css";
 import Sidebar from "../components/Sidebar";
+import Pagination from "../components/Pagination";
 import groupesApi from "../api/groupes";
 import filieresApi from "../api/filieres";
 import usersApi from "../api/users";
@@ -17,6 +18,7 @@ const EMPTY_FORM = { nom: "", filiere_id: "", annee: "1" };
 
 export default function Groups() {
   const [groupes, setGroupes] = useState([]);
+  const [meta, setMeta] = useState(null);
   const [filieres, setFilieres] = useState([]);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -30,23 +32,47 @@ export default function Groups() {
 
   const [search, setSearch] = useState("");
   const [filiereFilter, setFiliereFilter] = useState("");
+  const [page, setPage] = useState(1);
 
-  const loadAll = () => {
+  const loadGroupes = () => {
     setLoading(true);
-    return Promise.all([groupesApi.list(), filieresApi.list(), usersApi.list()])
-      .then(([groupesData, filieresData, usersData]) => {
-        setGroupes(groupesData);
-        setFilieres(filieresData);
-        setUsers(usersData);
+    return groupesApi
+      .list({ page, per_page: 10, search: search || undefined, filiere_id: filiereFilter || undefined })
+      .then((res) => {
+        setGroupes(res.data);
+        setMeta(res);
         setError("");
       })
       .catch(() => setError("Impossible de charger les groupes."))
       .finally(() => setLoading(false));
   };
 
+  // Reference data (filieres for the form/filter, users for effectif counts)
+  // is loaded once and stays unpaginated.
   useEffect(() => {
-    loadAll();
+    Promise.all([filieresApi.list(), usersApi.list()])
+      .then(([filieresData, usersData]) => {
+        setFilieres(filieresData);
+        setUsers(usersData);
+      })
+      .catch(() => setError("Impossible de charger les groupes."));
   }, []);
+
+  useEffect(() => {
+    const t = setTimeout(loadGroupes, search ? 350 : 0);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, search, filiereFilter]);
+
+  const handleSearchChange = (e) => {
+    setSearch(e.target.value);
+    setPage(1);
+  };
+
+  const handleFiliereFilterChange = (e) => {
+    setFiliereFilter(e.target.value);
+    setPage(1);
+  };
 
   const openCreateModal = () => {
     setEditingId(null);
@@ -74,7 +100,7 @@ export default function Groups() {
         await groupesApi.create(payload);
       }
       setShowModal(false);
-      await loadAll();
+      await loadGroupes();
     } catch (err) {
       const errors = err.response?.data?.errors;
       setFormError(errors ? Object.values(errors).flat().join(" ") : "Une erreur est survenue.");
@@ -87,21 +113,13 @@ export default function Groups() {
     if (!window.confirm(`Supprimer le groupe "${groupe.nom}" ?`)) return;
     try {
       await groupesApi.remove(groupe.id);
-      setGroupes((prev) => prev.filter((g) => g.id !== groupe.id));
+      loadGroupes();
     } catch {
       setError("Impossible de supprimer ce groupe.");
     }
   };
 
   const effectif = (groupeId) => users.filter((u) => u.groupe_id === groupeId).length;
-
-  const filteredGroupes = useMemo(() => {
-    return groupes.filter((g) => {
-      const matchesSearch = g.nom.toLowerCase().includes(search.toLowerCase());
-      const matchesFiliere = !filiereFilter || String(g.filiere_id) === filiereFilter;
-      return matchesSearch && matchesFiliere;
-    });
-  }, [groupes, search, filiereFilter]);
 
   return (
     <div className="dashboard">
@@ -146,12 +164,12 @@ export default function Groups() {
                 type="text"
                 placeholder="Rechercher un groupe..."
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={handleSearchChange}
               />
 
             </div>
 
-            <select value={filiereFilter} onChange={(e) => setFiliereFilter(e.target.value)}>
+            <select value={filiereFilter} onChange={handleFiliereFilterChange}>
               <option value="">Filtrer par filière</option>
               {filieres.map((f) => (
                 <option key={f.id} value={f.id}>{f.nom}</option>
@@ -168,7 +186,7 @@ export default function Groups() {
 
             <div>
               <p>Total Groupes</p>
-              <h2>{groupes.length}</h2>
+              <h2>{meta?.total ?? 0}</h2>
             </div>
 
           </div>
@@ -198,7 +216,11 @@ export default function Groups() {
 
             <tbody>
 
-              {filteredGroupes.map((group) => (
+              {groupes.length === 0 && (
+                <tr><td colSpan={6} style={{ padding: 24, textAlign: "center", color: "#94a3b8" }}>Aucun groupe trouvé.</td></tr>
+              )}
+
+              {groupes.map((group) => (
 
                 <tr key={group.id}>
 
@@ -253,6 +275,13 @@ export default function Groups() {
             </tbody>
 
           </table>
+          )}
+
+          {!loading && meta && (
+            <div className="table-footer">
+              <p>{meta.total} résultat(s) — page {meta.current_page} / {meta.last_page}</p>
+              <Pagination meta={meta} onPageChange={setPage} />
+            </div>
           )}
 
         </div>

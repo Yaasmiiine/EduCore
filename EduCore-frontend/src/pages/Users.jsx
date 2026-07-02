@@ -1,6 +1,7 @@
 import "../styles/users.css";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Sidebar from "../components/Sidebar";
+import Pagination from "../components/Pagination";
 import usersApi from "../api/users";
 import groupesApi from "../api/groupes";
 import { listRoles } from "../api/roles";
@@ -18,6 +19,7 @@ const EMPTY_FORM = { nom: "", prenom: "", email: "", password: "", role_id: "", 
 
 export default function Users() {
   const [users, setUsers] = useState([]);
+  const [meta, setMeta] = useState(null);
   const [roles, setRoles] = useState([]);
   const [groupes, setGroupes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -31,23 +33,48 @@ export default function Users() {
 
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
+  const [page, setPage] = useState(1);
 
-  const loadAll = () => {
+  const loadUsers = () => {
     setLoading(true);
-    return Promise.all([usersApi.list(), listRoles(), groupesApi.list()])
-      .then(([usersData, rolesData, groupesData]) => {
-        setUsers(usersData);
-        setRoles(rolesData);
-        setGroupes(groupesData);
+    return usersApi
+      .list({ page, per_page: 10, search: search || undefined, role: roleFilter || undefined })
+      .then((res) => {
+        setUsers(res.data);
+        setMeta(res);
         setError("");
       })
       .catch(() => setError("Impossible de charger les utilisateurs."))
       .finally(() => setLoading(false));
   };
 
+  // Reference data (roles, groupes for the form) is loaded once.
   useEffect(() => {
-    loadAll();
+    Promise.all([listRoles(), groupesApi.list()])
+      .then(([rolesData, groupesData]) => {
+        setRoles(rolesData);
+        setGroupes(groupesData);
+      })
+      .catch(() => setError("Impossible de charger les utilisateurs."));
   }, []);
+
+  // The user list is refetched from the server whenever the page or the
+  // search/role filters change (debounced while typing a search term).
+  useEffect(() => {
+    const t = setTimeout(loadUsers, search ? 350 : 0);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, search, roleFilter]);
+
+  const handleSearchChange = (e) => {
+    setSearch(e.target.value);
+    setPage(1);
+  };
+
+  const handleRoleFilterChange = (e) => {
+    setRoleFilter(e.target.value);
+    setPage(1);
+  };
 
   const selectedRoleNom = roles.find((r) => String(r.id) === String(form.role_id))?.nom;
   const isStagiaireRole = selectedRoleNom === "stagiaire";
@@ -94,7 +121,7 @@ export default function Users() {
         await usersApi.create(payload);
       }
       setShowModal(false);
-      await loadAll();
+      await loadUsers();
     } catch (err) {
       const errors = err.response?.data?.errors;
       setFormError(
@@ -109,20 +136,11 @@ export default function Users() {
     if (!window.confirm(`Supprimer ${user.prenom} ${user.nom} ?`)) return;
     try {
       await usersApi.remove(user.id);
-      setUsers((prev) => prev.filter((u) => u.id !== user.id));
+      loadUsers();
     } catch {
       setError("Impossible de supprimer cet utilisateur.");
     }
   };
-
-  const filteredUsers = useMemo(() => {
-    return users.filter((u) => {
-      const fullName = `${u.prenom} ${u.nom} ${u.email}`.toLowerCase();
-      const matchesSearch = fullName.includes(search.toLowerCase());
-      const matchesRole = !roleFilter || u.role?.nom === roleFilter;
-      return matchesSearch && matchesRole;
-    });
-  }, [users, search, roleFilter]);
 
   return (
     <div className="dashboard">
@@ -291,11 +309,11 @@ export default function Users() {
                 type="text"
                 placeholder="Rechercher un utilisateur..."
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={handleSearchChange}
               />
             </div>
 
-            <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}>
+            <select value={roleFilter} onChange={handleRoleFilterChange}>
               <option value="">Filtrer par rôle</option>
               {roles.map((role) => (
                 <option key={role.id} value={role.nom}>{role.nom}</option>
@@ -312,7 +330,7 @@ export default function Users() {
 
             <div>
               <p>Total utilisateurs</p>
-              <h2>{users.length}</h2>
+              <h2>{meta?.total ?? 0}</h2>
             </div>
 
           </div>
@@ -342,7 +360,11 @@ export default function Users() {
 
             <tbody>
 
-              {filteredUsers.map((user) => (
+              {users.length === 0 && (
+                <tr><td colSpan={6} style={{ padding: 24, textAlign: "center", color: "#94a3b8" }}>Aucun utilisateur trouvé.</td></tr>
+              )}
+
+              {users.map((user) => (
 
                 <tr key={user.id}>
 
@@ -390,6 +412,13 @@ export default function Users() {
             </tbody>
 
           </table>
+          )}
+
+          {!loading && meta && (
+            <div className="table-footer">
+              <p>{meta.total} résultat(s) — page {meta.current_page} / {meta.last_page}</p>
+              <Pagination meta={meta} onPageChange={setPage} />
+            </div>
           )}
 
         </div>

@@ -132,6 +132,33 @@
   text-align:center;
 }
 
+.auth-forgot{
+  text-align:right;
+  margin:-10px 0 20px;
+}
+
+.auth-forgot a{
+  color: var(--color-muted);
+  font-size:13px;
+  text-decoration:none;
+}
+
+.auth-forgot a:hover{
+  color: var(--color-primary);
+  text-decoration:underline;
+}
+
+.auth-success{
+  background:#f0fdf4;
+  color:#15803d;
+  border:1px solid #bbf7d0;
+  border-radius:var(--radius-md);
+  padding:12px 16px;
+  font-size:14px;
+  margin-bottom:20px;
+  text-align:center;
+}
+
 .auth-btn:disabled{
   opacity:0.7;
   cursor:not-allowed;

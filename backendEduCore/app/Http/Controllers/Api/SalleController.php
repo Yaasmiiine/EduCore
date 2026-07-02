@@ -9,9 +9,34 @@ use Illuminate\Support\Facades\Validator;
 
 class SalleController extends Controller
 {
-    public function index()
+    // Paginated (and searchable/filterable) only when a `page` param is sent —
+    // Schedule/Génération IA rely on the full unpaginated list to build their
+    // salle dropdowns, so that behavior stays unchanged by default.
+    public function index(Request $request)
     {
-        return response()->json(Salle::all());
+        $query = Salle::query();
+
+        if ($request->filled('search')) {
+            $search = $request->string('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('nom', 'like', "%{$search}%")
+                    ->orWhere('code', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('statut')) {
+            $query->where('statut', $request->string('statut'));
+        }
+
+        if ($request->filled('batiment')) {
+            $query->where('batiment', $request->string('batiment'));
+        }
+
+        if ($request->has('page')) {
+            return response()->json($query->paginate($request->integer('per_page', 10)));
+        }
+
+        return response()->json($query->get());
     }
 
     public function store(Request $request)

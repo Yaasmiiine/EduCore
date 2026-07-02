@@ -17,8 +17,10 @@ import Filieres from "./pages/Filieres";
 import Salles from "./pages/Salles";
 import GenerationIA from "./pages/GenerationIA";
 import ConflictDetection from "./pages/ConflictDetection";
-import ManualTimetableEditor from "./pages/ManualTimetableEditor";
 import Settings from "./pages/Settings";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
+import VerifyEmail from "./pages/VerifyEmail";
 
 
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -31,7 +33,10 @@ function App() {
   const isPublicPage =
     location.pathname === "/" ||
     location.pathname === "/login" ||
-    location.pathname === "/register";
+    location.pathname === "/register" ||
+    location.pathname === "/forgot-password" ||
+    location.pathname === "/reset-password" ||
+    location.pathname === "/verify-email";
 
   return (
     <SidebarProvider>
@@ -45,7 +50,10 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
+
 
         <Route
           path="/dashboard"
@@ -132,14 +140,6 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={["admin"]}>
               <ConflictDetection />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/manual-timetable-editor"
-          element={
-            <ProtectedRoute allowedRoles={["admin"]}>
-              <ManualTimetableEditor />
             </ProtectedRoute>
           }
         />

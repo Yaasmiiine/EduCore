@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { FaUserCircle, FaLock, FaSave } from "react-icons/fa";
+import { FaUserCircle, FaLock, FaSave, FaExclamationTriangle } from "react-icons/fa";
 import Sidebar from "../components/Sidebar";
 import { useAuth } from "../context/AuthContext.jsx";
 import * as authApi from "../api/auth";
@@ -17,6 +17,17 @@ export default function Settings() {
     email: user?.email || "",
   });
   const [profileStatus, setProfileStatus] = useState({ loading: false, error: "", success: "" });
+  const [resendStatus, setResendStatus] = useState({ loading: false, message: "" });
+
+  const handleResendVerification = async () => {
+    setResendStatus({ loading: true, message: "" });
+    try {
+      const { message } = await authApi.resendVerification();
+      setResendStatus({ loading: false, message });
+    } catch {
+      setResendStatus({ loading: false, message: "Erreur lors de l'envoi de l'email de vérification." });
+    }
+  };
 
   const [passwordForm, setPasswordForm] = useState({
     current_password: "",
@@ -104,6 +115,17 @@ export default function Settings() {
               <input type="text" value={ROLE_LABELS[role] || role} disabled />
             </div>
           </div>
+
+          {!user?.email_verified_at && (
+            <div className="settings-notice">
+              <FaExclamationTriangle />
+              <span>Votre adresse email n'est pas vérifiée.</span>
+              <button type="button" onClick={handleResendVerification} disabled={resendStatus.loading}>
+                {resendStatus.loading ? "Envoi..." : "Renvoyer l'email de vérification"}
+              </button>
+            </div>
+          )}
+          {resendStatus.message && <p className="settings-success">{resendStatus.message}</p>}
 
           {profileStatus.error && <p className="settings-error">{profileStatus.error}</p>}
           {profileStatus.success && <p className="settings-success">{profileStatus.success}</p>}

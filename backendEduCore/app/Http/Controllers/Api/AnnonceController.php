@@ -9,12 +9,24 @@ use Illuminate\Support\Facades\Validator;
 
 class AnnonceController extends Controller
 {
-    public function index()
+    // Paginated (and searchable/filterable) only when a `page` param is sent.
+    public function index(Request $request)
     {
-        $annonces = Annonce::with('auteur', 'groupe')
-            ->orderBy('created_at', 'desc')
-            ->get();
-        return response()->json($annonces);
+        $query = Annonce::with('auteur', 'groupe')->orderBy('created_at', 'desc');
+
+        if ($request->filled('search')) {
+            $query->where('titre', 'like', '%' . $request->string('search') . '%');
+        }
+
+        if ($request->filled('priorite')) {
+            $query->where('priorite', $request->string('priorite'));
+        }
+
+        if ($request->has('page')) {
+            return response()->json($query->paginate($request->integer('per_page', 10)));
+        }
+
+        return response()->json($query->get());
     }
 
     public function store(Request $request)

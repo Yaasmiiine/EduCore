@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import "../styles/modules.css";
 import Sidebar from "../components/Sidebar";
+import Pagination from "../components/Pagination";
 import modulesApi from "../api/modules";
 import filieresApi from "../api/filieres";
 import usersApi from "../api/users";
@@ -34,13 +35,17 @@ const CARD_COLORS = [
 
 const EMPTY_FORM = { nom: "", code: "", description: "", filiere_id: "", formateur_id: "", heures_total: "" };
 
-const STORAGE_BASE = (import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api").replace(/\/api\/?$/, "");
-
 export default function Modules() {
   const { role, user } = useAuth();
   const isAdmin = role === "admin";
+  // Teacher/student views are naturally small, already-scoped subsets (their
+  // own modules, or one filière), so they stay a simple unpaginated
+  // client-side filter. Admin browses the full catalogue and gets real
+  // server pagination.
+  const isPaginated = isAdmin;
 
   const [modules, setModules] = useState([]);
+  const [meta, setMeta] = useState(null);
   const [filieres, setFilieres] = useState([]);
   const [formateurs, setFormateurs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -51,6 +56,7 @@ export default function Modules() {
   const [formError, setFormError] = useState("");
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
 
   // File management modal
   const [filesModule, setFilesModule] = useState(null);
@@ -59,34 +65,61 @@ export default function Modules() {
   const [fileError, setFileError] = useState("");
   const [uploading, setUploading] = useState(false);
   const [generatingId, setGeneratingId] = useState(null);
+  const [downloadingId, setDownloadingId] = useState(null);
 
-  const loadAll = () => {
+  const loadModules = () => {
     setLoading(true);
-    const requests = isAdmin
-      ? [modulesApi.list(), filieresApi.list(), usersApi.list()]
-      : [modulesApi.list(), filieresApi.list()];
+    const request = isPaginated
+      ? modulesApi.list({ page, per_page: 10, search: search || undefined })
+      : modulesApi.list();
 
-    return Promise.all(requests)
-      .then(([modulesData, filieresData, usersData]) => {
-        setModules(modulesData);
-        setFilieres(filieresData);
-        if (usersData) setFormateurs(usersData.filter((u) => u.role?.nom === "formateur"));
+    return request
+      .then((res) => {
+        if (isPaginated) {
+          setModules(res.data);
+          setMeta(res);
+        } else {
+          setModules(res);
+          setMeta(null);
+        }
         setError("");
       })
       .catch(() => setError("Impossible de charger les modules."))
       .finally(() => setLoading(false));
   };
 
+  // Reference data (filières always, formateurs only for admin) loaded once.
   useEffect(() => {
-    loadAll();
+    const requests = isAdmin
+      ? [filieresApi.list(), usersApi.list()]
+      : [filieresApi.list()];
+
+    Promise.all(requests)
+      .then(([filieresData, usersData]) => {
+        setFilieres(filieresData);
+        if (usersData) setFormateurs(usersData.filter((u) => u.role?.nom === "formateur"));
+      })
+      .catch(() => setError("Impossible de charger les modules."));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    const t = setTimeout(loadModules, search ? 350 : 0);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, search, isPaginated]);
+
+  const handleSearchChange = (e) => {
+    setSearch(e.target.value);
+    setPage(1);
+  };
+
   const visibleModules = useMemo(() => {
+    if (isPaginated) return modules;
     if (role === "teacher") return modules.filter((m) => m.formateur_id === user?.id);
     if (role === "student") return modules.filter((m) => m.filiere_id === user?.groupe?.filiere_id);
     return modules;
-  }, [modules, role, user]);
+  }, [modules, role, user, isPaginated]);
 
   const canManageFiles = (module) => isAdmin || (role === "teacher" && module.formateur_id === user?.id);
 
@@ -104,7 +137,7 @@ export default function Modules() {
     try {
       await modulesApi.create(payload);
       setShowModal(false);
-      await loadAll();
+      await loadModules();
     } catch (err) {
       const errors = err.response?.data?.errors;
       setFormError(errors ? Object.values(errors).flat().join(" ") : "Une erreur est survenue.");
@@ -117,7 +150,7 @@ export default function Modules() {
     if (!window.confirm(`Supprimer le module "${module.nom}" ?`)) return;
     try {
       await modulesApi.remove(module.id);
-      setModules((prev) => prev.filter((m) => m.id !== module.id));
+      loadModules();
     } catch {
       setError("Impossible de supprimer ce module.");
     }
@@ -163,6 +196,26 @@ export default function Modules() {
     }
   };
 
+  const handleDownload = async (fichier) => {
+    setDownloadingId(fichier.id);
+    setFileError("");
+    try {
+      const blob = await fichiersApi.download(fichier.id);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fichier.nom;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch {
+      setFileError("Impossible de télécharger ce fichier.");
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
   const handleGenerateResume = async (fichier) => {
     setGeneratingId(fichier.id);
     setFileError("");
@@ -176,10 +229,10 @@ export default function Modules() {
     }
   };
 
-  const filteredModules = useMemo(
-    () => visibleModules.filter((m) => m.nom.toLowerCase().includes(search.toLowerCase())),
-    [visibleModules, search]
-  );
+  const filteredModules = useMemo(() => {
+    if (isPaginated) return visibleModules;
+    return visibleModules.filter((m) => m.nom.toLowerCase().includes(search.toLowerCase()));
+  }, [visibleModules, search, isPaginated]);
 
   return (
   <div className="dashboard">
@@ -207,7 +260,7 @@ export default function Modules() {
               type="text"
               placeholder="Rechercher un module..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={handleSearchChange}
             />
           </div>
         </div>
@@ -217,6 +270,8 @@ export default function Modules() {
 
       {loading ? (
         <p>Chargement...</p>
+      ) : filteredModules.length === 0 ? (
+        <p>Aucun module trouvé.</p>
       ) : (
       <div className="modules-grid">
         {filteredModules.map((module, index) => {
@@ -278,6 +333,13 @@ export default function Modules() {
           );
         })}
       </div>
+      )}
+
+      {!loading && isPaginated && meta && (
+        <div className="modules-footer">
+          <p>{meta.total} résultat(s) — page {meta.current_page} / {meta.last_page}</p>
+          <Pagination meta={meta} onPageChange={setPage} />
+        </div>
       )}
 
       {showModal && (
@@ -417,15 +479,14 @@ export default function Modules() {
                       <span className="file-name">{f.nom}</span>
                       <span className="file-size">{(f.taille / 1024).toFixed(0)} Ko</span>
 
-                      <a
-                        href={`${STORAGE_BASE}/storage/${f.chemin}`}
-                        target="_blank"
-                        rel="noreferrer"
+                      <button
                         className="file-action"
+                        onClick={() => handleDownload(f)}
+                        disabled={downloadingId === f.id}
                         title="Télécharger"
                       >
                         <FaDownload />
-                      </a>
+                      </button>
 
                       <button
                         className="file-action"

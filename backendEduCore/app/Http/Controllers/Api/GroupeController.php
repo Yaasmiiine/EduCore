@@ -9,9 +9,26 @@ use Illuminate\Support\Facades\Validator;
 
 class GroupeController extends Controller
 {
-    public function index()
+    // Paginated (and searchable/filterable) only when a `page` param is sent —
+    // the registration form and every admin dropdown that lists groupes rely
+    // on the full unpaginated list, so that behavior stays unchanged by default.
+    public function index(Request $request)
     {
-        return response()->json(Groupe::with('filiere')->get());
+        $query = Groupe::with('filiere');
+
+        if ($request->filled('search')) {
+            $query->where('nom', 'like', '%' . $request->string('search') . '%');
+        }
+
+        if ($request->filled('filiere_id')) {
+            $query->where('filiere_id', $request->integer('filiere_id'));
+        }
+
+        if ($request->has('page')) {
+            return response()->json($query->paginate($request->integer('per_page', 10)));
+        }
+
+        return response()->json($query->get());
     }
 
     public function store(Request $request)

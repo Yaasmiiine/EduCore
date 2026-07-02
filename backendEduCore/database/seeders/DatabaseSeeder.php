@@ -24,36 +24,40 @@ class DatabaseSeeder extends Seeder
 
         // Admin
         $adminUser = User::create([
-            'nom'      => 'Admin',
-            'prenom'   => 'EduCore',
-            'email'    => 'admin@educore.test',
-            'password' => Hash::make('password123'),
-            'role_id'  => $admin->id,
+            'nom'               => 'Admin',
+            'prenom'            => 'EduCore',
+            'email'             => 'admin@educore.test',
+            'password'          => Hash::make('password123'),
+            'role_id'           => $admin->id,
+            'email_verified_at' => now(),
         ]);
 
         // Formateurs
         $mohammed = User::create([
-            'nom'      => 'Alami',
-            'prenom'   => 'Mohammed',
-            'email'    => 'formateur@educore.test',
-            'password' => Hash::make('password123'),
-            'role_id'  => $formateur->id,
+            'nom'               => 'Alami',
+            'prenom'            => 'Mohammed',
+            'email'             => 'formateur@educore.test',
+            'password'          => Hash::make('password123'),
+            'role_id'           => $formateur->id,
+            'email_verified_at' => now(),
         ]);
 
         $nadia = User::create([
-            'nom'      => 'Bensouda',
-            'prenom'   => 'Nadia',
-            'email'    => 'formateur2@educore.test',
-            'password' => Hash::make('password123'),
-            'role_id'  => $formateur->id,
+            'nom'               => 'Bensouda',
+            'prenom'            => 'Nadia',
+            'email'             => 'formateur2@educore.test',
+            'password'          => Hash::make('password123'),
+            'role_id'           => $formateur->id,
+            'email_verified_at' => now(),
         ]);
 
         $karim = User::create([
-            'nom'      => 'Tazi',
-            'prenom'   => 'Karim',
-            'email'    => 'formateur3@educore.test',
-            'password' => Hash::make('password123'),
-            'role_id'  => $formateur->id,
+            'nom'               => 'Tazi',
+            'prenom'            => 'Karim',
+            'email'             => 'formateur3@educore.test',
+            'password'          => Hash::make('password123'),
+            'role_id'           => $formateur->id,
+            'email_verified_at' => now(),
         ]);
 
         // Filières
@@ -82,14 +86,15 @@ class DatabaseSeeder extends Seeder
         $geG1  = Groupe::create(['filiere_id' => $filiereGestion->id, 'nom' => 'GE101-G1', 'annee' => 1]);
 
         // Stagiaires
-        User::create(['nom' => 'Benali', 'prenom' => 'Youssef', 'email' => 'stagiaire@educore.test', 'password' => Hash::make('password123'), 'role_id' => $stagiaire->id, 'groupe_id' => $devG1->id]);
-        User::create(['nom' => 'Amrani', 'prenom' => 'Sara', 'email' => 'stagiaire2@educore.test', 'password' => Hash::make('password123'), 'role_id' => $stagiaire->id, 'groupe_id' => $devG1->id]);
-        User::create(['nom' => 'Chafik', 'prenom' => 'Nabil', 'email' => 'stagiaire3@educore.test', 'password' => Hash::make('password123'), 'role_id' => $stagiaire->id, 'groupe_id' => $devG2->id]);
-        User::create(['nom' => 'Ouali', 'prenom' => 'Imane', 'email' => 'stagiaire4@educore.test', 'password' => Hash::make('password123'), 'role_id' => $stagiaire->id, 'groupe_id' => $devG2->id]);
-        User::create(['nom' => 'Rachidi', 'prenom' => 'Hamza', 'email' => 'stagiaire5@educore.test', 'password' => Hash::make('password123'), 'role_id' => $stagiaire->id, 'groupe_id' => $rsG1->id]);
-        User::create(['nom' => 'Bouzid', 'prenom' => 'Salma', 'email' => 'stagiaire6@educore.test', 'password' => Hash::make('password123'), 'role_id' => $stagiaire->id, 'groupe_id' => $rsG1->id]);
-        User::create(['nom' => 'Fassi', 'prenom' => 'Yassine', 'email' => 'stagiaire7@educore.test', 'password' => Hash::make('password123'), 'role_id' => $stagiaire->id, 'groupe_id' => $geG1->id]);
-        User::create(['nom' => 'Naciri', 'prenom' => 'Khadija', 'email' => 'stagiaire8@educore.test', 'password' => Hash::make('password123'), 'role_id' => $stagiaire->id, 'groupe_id' => $geG1->id]);
+        $verified = ['email_verified_at' => now()];
+        User::create(['nom' => 'Benali', 'prenom' => 'Youssef', 'email' => 'stagiaire@educore.test', 'password' => Hash::make('password123'), 'role_id' => $stagiaire->id, 'groupe_id' => $devG1->id] + $verified);
+        User::create(['nom' => 'Amrani', 'prenom' => 'Sara', 'email' => 'stagiaire2@educore.test', 'password' => Hash::make('password123'), 'role_id' => $stagiaire->id, 'groupe_id' => $devG1->id] + $verified);
+        User::create(['nom' => 'Chafik', 'prenom' => 'Nabil', 'email' => 'stagiaire3@educore.test', 'password' => Hash::make('password123'), 'role_id' => $stagiaire->id, 'groupe_id' => $devG2->id] + $verified);
+        User::create(['nom' => 'Ouali', 'prenom' => 'Imane', 'email' => 'stagiaire4@educore.test', 'password' => Hash::make('password123'), 'role_id' => $stagiaire->id, 'groupe_id' => $devG2->id] + $verified);
+        User::create(['nom' => 'Rachidi', 'prenom' => 'Hamza', 'email' => 'stagiaire5@educore.test', 'password' => Hash::make('password123'), 'role_id' => $stagiaire->id, 'groupe_id' => $rsG1->id] + $verified);
+        User::create(['nom' => 'Bouzid', 'prenom' => 'Salma', 'email' => 'stagiaire6@educore.test', 'password' => Hash::make('password123'), 'role_id' => $stagiaire->id, 'groupe_id' => $rsG1->id] + $verified);
+        User::create(['nom' => 'Fassi', 'prenom' => 'Yassine', 'email' => 'stagiaire7@educore.test', 'password' => Hash::make('password123'), 'role_id' => $stagiaire->id, 'groupe_id' => $geG1->id] + $verified);
+        User::create(['nom' => 'Naciri', 'prenom' => 'Khadija', 'email' => 'stagiaire8@educore.test', 'password' => Hash::make('password123'), 'role_id' => $stagiaire->id, 'groupe_id' => $geG1->id] + $verified);
 
         // Salles
         $salleA101 = Salle::create(['nom' => 'Salle A101', 'code' => 'A101', 'batiment' => 'Bâtiment A', 'capacite' => 30, 'equipement' => 'Vidéoprojecteur, postes informatiques', 'statut' => 'disponible']);

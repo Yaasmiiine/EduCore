@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Sidebar from "../components/Sidebar";
+import Pagination from "../components/Pagination";
 import sallesApi from "../api/salles";
 import "../styles/salles.css";
 
@@ -20,6 +21,8 @@ const EMPTY_FORM = { nom: "", code: "", batiment: "", capacite: "", equipement: 
 
 export default function Salles() {
   const [salles, setSalles] = useState([]);
+  const [meta, setMeta] = useState(null);
+  const [allSalles, setAllSalles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -32,19 +35,53 @@ export default function Salles() {
   const [search, setSearch] = useState("");
   const [batimentFilter, setBatimentFilter] = useState("");
   const [statutFilter, setStatutFilter] = useState("");
+  const [page, setPage] = useState(1);
 
   const loadSalles = () => {
     setLoading(true);
     return sallesApi
-      .list()
-      .then(setSalles)
+      .list({
+        page,
+        per_page: 10,
+        search: search || undefined,
+        batiment: batimentFilter || undefined,
+        statut: statutFilter || undefined,
+      })
+      .then((res) => {
+        setSalles(res.data);
+        setMeta(res);
+        setError("");
+      })
       .catch(() => setError("Impossible de charger les salles."))
       .finally(() => setLoading(false));
   };
 
+  // The full unpaginated list feeds the stat cards and the "bâtiment" filter
+  // options, so those stay accurate regardless of which page is shown.
   useEffect(() => {
-    loadSalles();
+    sallesApi.list().then(setAllSalles).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    const t = setTimeout(loadSalles, search ? 350 : 0);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, search, batimentFilter, statutFilter]);
+
+  const handleSearchChange = (e) => {
+    setSearch(e.target.value);
+    setPage(1);
+  };
+
+  const handleBatimentFilterChange = (e) => {
+    setBatimentFilter(e.target.value);
+    setPage(1);
+  };
+
+  const handleStatutFilterChange = (e) => {
+    setStatutFilter(e.target.value);
+    setPage(1);
+  };
 
   const openCreateModal = () => {
     setEditingId(null);
@@ -80,6 +117,7 @@ export default function Salles() {
       }
       setShowModal(false);
       await loadSalles();
+      sallesApi.list().then(setAllSalles).catch(() => {});
     } catch (err) {
       const errors = err.response?.data?.errors;
       setFormError(errors ? Object.values(errors).flat().join(" ") : "Une erreur est survenue.");
@@ -92,28 +130,20 @@ export default function Salles() {
     if (!window.confirm(`Supprimer la salle "${salle.nom}" ?`)) return;
     try {
       await sallesApi.remove(salle.id);
-      setSalles((prev) => prev.filter((s) => s.id !== salle.id));
+      loadSalles();
+      sallesApi.list().then(setAllSalles).catch(() => {});
     } catch {
       setError("Impossible de supprimer cette salle.");
     }
   };
 
   const batiments = useMemo(
-    () => [...new Set(salles.map((s) => s.batiment).filter(Boolean))],
-    [salles]
+    () => [...new Set(allSalles.map((s) => s.batiment).filter(Boolean))],
+    [allSalles]
   );
 
-  const filteredSalles = useMemo(() => {
-    return salles.filter((s) => {
-      const matchesSearch = s.nom.toLowerCase().includes(search.toLowerCase());
-      const matchesBatiment = !batimentFilter || s.batiment === batimentFilter;
-      const matchesStatut = !statutFilter || s.statut === statutFilter;
-      return matchesSearch && matchesBatiment && matchesStatut;
-    });
-  }, [salles, search, batimentFilter, statutFilter]);
-
-  const disponibles = salles.filter((s) => s.statut === "disponible").length;
-  const occupees = salles.filter((s) => s.statut === "occupee").length;
+  const disponibles = allSalles.filter((s) => s.statut === "disponible").length;
+  const occupees = allSalles.filter((s) => s.statut === "occupee").length;
 
   return (
     <div className="dashboard">
@@ -145,7 +175,7 @@ export default function Salles() {
           </div>
 
           <div>
-            <h2>{salles.length}</h2>
+            <h2>{meta?.total ?? allSalles.length}</h2>
             <p>Total salles</p>
           </div>
         </div>
@@ -183,19 +213,19 @@ export default function Salles() {
               type="text"
               placeholder="Rechercher une salle..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={handleSearchChange}
             />
           </div>
 
           <div className="filters">
-            <select value={batimentFilter} onChange={(e) => setBatimentFilter(e.target.value)}>
+            <select value={batimentFilter} onChange={handleBatimentFilterChange}>
               <option value="">Bâtiment</option>
               {batiments.map((b) => (
                 <option key={b} value={b}>{b}</option>
               ))}
             </select>
 
-            <select value={statutFilter} onChange={(e) => setStatutFilter(e.target.value)}>
+            <select value={statutFilter} onChange={handleStatutFilterChange}>
               <option value="">Statut</option>
               <option value="disponible">Disponible</option>
               <option value="occupee">Occupée</option>
@@ -222,7 +252,11 @@ export default function Salles() {
           </thead>
 
           <tbody>
-            {filteredSalles.map((salle) => (
+            {salles.length === 0 && (
+              <tr><td colSpan={7} style={{ padding: 24, textAlign: "center", color: "#94a3b8" }}>Aucune salle trouvée.</td></tr>
+            )}
+
+            {salles.map((salle) => (
               <tr key={salle.id}>
                 <td className="salle-name">{salle.nom}</td>
                 <td>{salle.code}</td>
@@ -257,6 +291,13 @@ export default function Salles() {
             ))}
           </tbody>
         </table>
+        )}
+
+        {!loading && meta && (
+          <div className="table-footer">
+            <p>{meta.total} résultat(s) — page {meta.current_page} / {meta.last_page}</p>
+            <Pagination meta={meta} onPageChange={setPage} />
+          </div>
         )}
       </div>
 

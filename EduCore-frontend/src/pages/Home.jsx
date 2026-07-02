@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import "../styles/home.css";
+import { sendContactMessage } from "../api/contact";
 import {
   FaFacebookF,
   FaInstagram,
@@ -26,7 +28,32 @@ import {
   FaGraduationCap
 } from "react-icons/fa";
 
+const EMPTY_CONTACT_FORM = { name: "", email: "", message: "" };
+
 export default function Home() {
+  const [contactForm, setContactForm] = useState(EMPTY_CONTACT_FORM);
+  const [contactStatus, setContactStatus] = useState({ loading: false, error: "", success: "" });
+
+  const handleContactChange = (e) => {
+    setContactForm({ ...contactForm, [e.target.name]: e.target.value });
+  };
+
+  const handleContactSubmit = async (e) => {
+    e.preventDefault();
+    setContactStatus({ loading: true, error: "", success: "" });
+    try {
+      const { message } = await sendContactMessage(contactForm);
+      setContactStatus({ loading: false, error: "", success: message });
+      setContactForm(EMPTY_CONTACT_FORM);
+    } catch (err) {
+      const errors = err.response?.data?.errors;
+      const errorMessage = errors
+        ? Object.values(errors).flat().join(" ")
+        : "Une erreur est survenue, veuillez réessayer.";
+      setContactStatus({ loading: false, error: errorMessage, success: "" });
+    }
+  };
+
   return (
     <div className="home">
 
@@ -364,19 +391,40 @@ export default function Home() {
 
     </div>
 
-    <form className="contact-form">
+    <form className="contact-form" onSubmit={handleContactSubmit}>
 
-      <input type="text" placeholder="Votre nom" />
+      {contactStatus.error && <p className="contact-error">{contactStatus.error}</p>}
+      {contactStatus.success && <p className="contact-success">{contactStatus.success}</p>}
 
-      <input type="email" placeholder="Votre email" />
+      <input
+        type="text"
+        name="name"
+        placeholder="Votre nom"
+        value={contactForm.name}
+        onChange={handleContactChange}
+        required
+      />
+
+      <input
+        type="email"
+        name="email"
+        placeholder="Votre email"
+        value={contactForm.email}
+        onChange={handleContactChange}
+        required
+      />
 
       <textarea
         rows="6"
+        name="message"
         placeholder="Votre message"
+        value={contactForm.message}
+        onChange={handleContactChange}
+        required
       ></textarea>
 
-      <button className="primary-btn">
-        Envoyer le message
+      <button className="primary-btn" disabled={contactStatus.loading}>
+        {contactStatus.loading ? "Envoi..." : "Envoyer le message"}
       </button>
 
     </form>

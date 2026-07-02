@@ -54,6 +54,19 @@ class FichierController extends Controller
         return response()->json($fichier->load('module', 'user'));
     }
 
+    // GET /api/fichiers/{id}/download — streams the file directly through
+    // Laravel instead of relying on the public/storage symlink (which has
+    // already broken once during a filesystem move). Works identically
+    // whether or not that symlink exists.
+    public function download(Fichier $fichier)
+    {
+        if (! Storage::disk('public')->exists($fichier->chemin)) {
+            return response()->json(['message' => 'Fichier introuvable sur le serveur.'], 404);
+        }
+
+        return Storage::disk('public')->response($fichier->chemin, $fichier->nom);
+    }
+
     public function destroy(Fichier $fichier)
     {
         Storage::disk('public')->delete($fichier->chemin);

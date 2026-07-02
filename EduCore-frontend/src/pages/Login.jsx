@@ -85,6 +85,10 @@ export default function Login() {
             />
           </div>
 
+          <div className="auth-forgot">
+            <Link to="/forgot-password">Mot de passe oublié ?</Link>
+          </div>
+
           <button className="auth-btn" disabled={loading}>
             {loading ? "Connexion..." : "Se connecter"}
           </button>

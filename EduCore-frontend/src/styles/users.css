@@ -281,15 +281,28 @@
   color:var(--color-danger);
 }
 
-/* PAGINATION */
+/* FOOTER / PAGINATION */
+
+.users-page .table-footer{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  flex-wrap: wrap;
+  gap: 12px;
+
+  padding:22px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.users-page .table-footer p{
+  color:var(--color-muted);
+  font-size:14px;
+}
 
 .users-page .pagination{
   display:flex;
-  justify-content:flex-end;
   align-items:center;
   gap:10px;
-
-  padding:22px;
 }
 
 .users-page .pagination button{

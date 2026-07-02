@@ -56,6 +56,30 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Frontend URL
+    |--------------------------------------------------------------------------
+    |
+    | The React app's base URL, used to build links sent in emails (password
+    | reset, email verification) since this is a decoupled SPA rather than a
+    | server-rendered app.
+    |
+    */
+
+    'frontend_url' => env('FRONTEND_URL', 'http://localhost:5173'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Contact Form Recipient
+    |--------------------------------------------------------------------------
+    |
+    | Where the public "Contactez-nous" form on the landing page delivers to.
+    |
+    */
+
+    'contact_email' => env('CONTACT_EMAIL', 'admin@educore.test'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
     |

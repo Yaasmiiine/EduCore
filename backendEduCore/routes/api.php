@@ -12,14 +12,20 @@ use App\Http\Controllers\Api\FichierController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\AiController;
 use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\Api\ContactController;
 use App\Models\Role;
 use Illuminate\Support\Facades\Route;
 
 // ─── Public routes ──────────────────────────────────────────────────────────
 Route::prefix('auth')->group(function () {
-    Route::post('register', [AuthController::class, 'register']);
-    Route::post('login',    [AuthController::class, 'login']);
+    Route::post('register',         [AuthController::class, 'register']);
+    Route::post('login',            [AuthController::class, 'login']);
+    Route::post('forgot-password',  [AuthController::class, 'forgotPassword']);
+    Route::post('reset-password',   [AuthController::class, 'resetPassword']);
+    Route::post('verify-email',     [AuthController::class, 'verifyEmail']);
 });
+
+Route::post('contact', [ContactController::class, 'store']);
 
 // Filieres & groupes reads are public — a prospective stagiaire needs to see
 // the list of filières/groupes to pick one on the registration form, before
@@ -32,9 +38,10 @@ Route::middleware('auth:api')->group(function () {
 
     // Auth
     Route::prefix('auth')->group(function () {
-        Route::post('logout',  [AuthController::class, 'logout']);
-        Route::post('refresh', [AuthController::class, 'refresh']);
-        Route::get('me',       [AuthController::class, 'me']);
+        Route::post('logout',              [AuthController::class, 'logout']);
+        Route::post('refresh',             [AuthController::class, 'refresh']);
+        Route::get('me',                   [AuthController::class, 'me']);
+        Route::post('resend-verification', [AuthController::class, 'resendVerification']);
     });
 
     // Profile — every authenticated user manages their own account.
@@ -104,6 +111,7 @@ Route::middleware('auth:api')->group(function () {
         Route::apiResource('fichiers', FichierController::class)->only(['store', 'destroy']);
     });
     Route::post('fichiers/{fichier}/resume', [FichierController::class, 'resumeIA']);
+    Route::get('fichiers/{fichier}/download', [FichierController::class, 'download']);
 
     Route::post('ai/chat', [AiController::class, 'chat']);
 });

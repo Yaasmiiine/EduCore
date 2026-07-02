@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import "../styles/announcements.css";
 
 import Sidebar from "../components/Sidebar";
+import Pagination from "../components/Pagination";
 import annoncesApi from "../api/annonces";
 import groupesApi from "../api/groupes";
 import { useAuth } from "../context/AuthContext.jsx";
@@ -21,8 +22,14 @@ const EMPTY_FORM = { titre: "", contenu: "", priorite: "normale", groupe_id: "" 
 export default function Announcements() {
   const { role, user } = useAuth();
   const canCreate = role === "admin" || role === "teacher";
+  // Students see a small, already-scoped set (global + their groupe), so
+  // that view stays a simple unpaginated client-side filter like before.
+  // Admin/teacher (who browse the full list) get real server pagination.
+  const isPaginated = role !== "student";
 
   const [annonces, setAnnonces] = useState([]);
+  const [meta, setMeta] = useState(null);
+  const [statsAnnonces, setStatsAnnonces] = useState([]);
   const [groupes, setGroupes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -35,22 +42,59 @@ export default function Announcements() {
 
   const [search, setSearch] = useState("");
   const [prioriteFilter, setPrioriteFilter] = useState("");
+  const [page, setPage] = useState(1);
 
-  const loadAll = () => {
+  const loadAnnonces = () => {
     setLoading(true);
-    return Promise.all([annoncesApi.list(), groupesApi.list()])
-      .then(([annoncesData, groupesData]) => {
-        setAnnonces(annoncesData);
-        setGroupes(groupesData);
+    const request = isPaginated
+      ? annoncesApi.list({ page, per_page: 10, search: search || undefined, priorite: prioriteFilter || undefined })
+      : annoncesApi.list();
+
+    return request
+      .then((res) => {
+        if (isPaginated) {
+          setAnnonces(res.data);
+          setMeta(res);
+        } else {
+          setAnnonces(res);
+          setMeta(null);
+        }
         setError("");
       })
       .catch(() => setError("Impossible de charger les annonces."))
       .finally(() => setLoading(false));
   };
 
+  // Reference data loaded once: groupes for the form, and the full
+  // (unpaginated) annonces list purely to compute accurate stat counts.
   useEffect(() => {
-    loadAll();
+    Promise.all([groupesApi.list(), annoncesApi.list()])
+      .then(([groupesData, annoncesData]) => {
+        setGroupes(groupesData);
+        setStatsAnnonces(annoncesData);
+      })
+      .catch(() => setError("Impossible de charger les annonces."));
   }, []);
+
+  useEffect(() => {
+    const t = setTimeout(loadAnnonces, search ? 350 : 0);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, search, prioriteFilter, isPaginated]);
+
+  const handleSearchChange = (e) => {
+    setSearch(e.target.value);
+    setPage(1);
+  };
+
+  const handlePrioriteFilterChange = (e) => {
+    setPrioriteFilter(e.target.value);
+    setPage(1);
+  };
+
+  const refreshStats = () => {
+    annoncesApi.list().then(setStatsAnnonces).catch(() => {});
+  };
 
   const canModify = (annonce) => role === "admin" || annonce.auteur_id === user?.id;
 
@@ -85,7 +129,8 @@ export default function Announcements() {
         await annoncesApi.create(payload);
       }
       setShowModal(false);
-      await loadAll();
+      await loadAnnonces();
+      refreshStats();
     } catch (err) {
       const errors = err.response?.data?.errors;
       setFormError(errors ? Object.values(errors).flat().join(" ") : "Une erreur est survenue.");
@@ -98,27 +143,35 @@ export default function Announcements() {
     if (!window.confirm(`Supprimer l'annonce "${annonce.titre}" ?`)) return;
     try {
       await annoncesApi.remove(annonce.id);
-      setAnnonces((prev) => prev.filter((a) => a.id !== annonce.id));
+      loadAnnonces();
+      refreshStats();
     } catch {
       setError("Impossible de supprimer cette annonce.");
     }
   };
 
   // Students only see global announcements + the ones aimed at their own groupe.
+  // For admin/teacher the list is already the current server-paginated page.
   const visibleAnnonces = useMemo(() => {
     if (role !== "student") return annonces;
     return annonces.filter((a) => !a.groupe_id || a.groupe_id === user?.groupe_id);
   }, [annonces, role, user]);
 
   const filteredAnnonces = useMemo(() => {
+    if (isPaginated) return visibleAnnonces;
     return visibleAnnonces.filter((a) => {
       const matchesSearch = a.titre.toLowerCase().includes(search.toLowerCase());
       const matchesPriorite = !prioriteFilter || a.priorite === prioriteFilter;
       return matchesSearch && matchesPriorite;
     });
-  }, [visibleAnnonces, search, prioriteFilter]);
+  }, [visibleAnnonces, search, prioriteFilter, isPaginated]);
 
-  const countByPriorite = (p) => visibleAnnonces.filter((a) => a.priorite === p).length;
+  const visibleStatsAnnonces = useMemo(() => {
+    if (role !== "student") return statsAnnonces;
+    return statsAnnonces.filter((a) => !a.groupe_id || a.groupe_id === user?.groupe_id);
+  }, [statsAnnonces, role, user]);
+
+  const countByPriorite = (p) => visibleStatsAnnonces.filter((a) => a.priorite === p).length;
 
   return (
     <div className="dashboard">
@@ -162,7 +215,7 @@ export default function Announcements() {
 
             <div>
               <p>Total annonces</p>
-              <h2>{visibleAnnonces.length}</h2>
+              <h2>{isPaginated ? (meta?.total ?? 0) : visibleStatsAnnonces.length}</h2>
             </div>
 
           </div>
@@ -219,12 +272,12 @@ export default function Announcements() {
               type="text"
               placeholder="Rechercher une annonce..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={handleSearchChange}
             />
 
           </div>
 
-          <select value={prioriteFilter} onChange={(e) => setPrioriteFilter(e.target.value)}>
+          <select value={prioriteFilter} onChange={handlePrioriteFilterChange}>
             <option value="">Filtrer par priorité</option>
             <option value="normale">Normale</option>
             <option value="importante">Importante</option>
@@ -255,6 +308,10 @@ export default function Announcements() {
             </thead>
 
             <tbody>
+
+              {filteredAnnonces.length === 0 && (
+                <tr><td colSpan={6} style={{ padding: 24, textAlign: "center", color: "#94a3b8" }}>Aucune annonce trouvée.</td></tr>
+              )}
 
               {filteredAnnonces.map((item) => (
 
@@ -335,6 +392,13 @@ export default function Announcements() {
             </tbody>
 
           </table>
+          )}
+
+          {!loading && isPaginated && meta && (
+            <div className="table-footer">
+              <p>{meta.total} résultat(s) — page {meta.current_page} / {meta.last_page}</p>
+              <Pagination meta={meta} onPageChange={setPage} />
+            </div>
           )}
 
         </div>

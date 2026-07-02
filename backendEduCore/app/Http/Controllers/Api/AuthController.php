@@ -3,11 +3,16 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Mail\ResetPasswordMail;
+use App\Mail\VerifyEmailMail;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
@@ -38,6 +43,8 @@ class AuthController extends Controller
             'role_id'   => $stagiaireRole->id,
             'groupe_id' => $request->groupe_id,
         ]);
+
+        $this->sendVerificationEmail($user);
 
         $token = auth('api')->login($user);
 
@@ -89,7 +96,17 @@ class AuthController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $user->update($request->only('nom', 'prenom', 'email', 'photo'));
+        // Changing address invalidates the previous verification.
+        if ($request->filled('email') && $request->email !== $user->email) {
+            $user->email_verified_at = null;
+        }
+
+        $user->fill($request->only('nom', 'prenom', 'email', 'photo'));
+        $user->save();
+
+        if (! $user->email_verified_at) {
+            $this->sendVerificationEmail($user);
+        }
 
         return response()->json($user->load('role', 'groupe'));
     }
@@ -121,6 +138,131 @@ class AuthController extends Controller
     public function refresh()
     {
         return $this->respondWithToken(auth('api')->refresh());
+    }
+
+    // POST /api/auth/forgot-password — public. Always responds the same way
+    // whether or not the email exists, to avoid leaking which addresses are
+    // registered.
+    public function forgotPassword(Request $request)
+    {
+        $validator = Validator::make($request->all(), ['email' => 'required|email']);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $user = User::where('email', $request->email)->first();
+
+        if ($user) {
+            $token = Str::random(64);
+
+            DB::table('password_reset_tokens')->updateOrInsert(
+                ['email' => $user->email],
+                ['token' => Hash::make($token), 'created_at' => now()]
+            );
+
+            $resetUrl = rtrim(config('app.frontend_url'), '/')
+                . '/reset-password?token=' . $token . '&email=' . urlencode($user->email);
+
+            Mail::to($user->email)->send(new ResetPasswordMail($user->prenom, $resetUrl));
+        }
+
+        return response()->json([
+            'message' => "Si cet email existe, un lien de réinitialisation vient d'être envoyé.",
+        ]);
+    }
+
+    // POST /api/auth/reset-password — public.
+    public function resetPassword(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'email'    => 'required|email',
+            'token'    => 'required|string',
+            'password' => 'required|string|min:6|confirmed',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $record = DB::table('password_reset_tokens')->where('email', $request->email)->first();
+
+        if (! $record || ! Hash::check($request->token, $record->token)) {
+            return response()->json(['message' => 'Ce lien de réinitialisation est invalide.'], 422);
+        }
+
+        if (now()->diffInMinutes($record->created_at) > 60) {
+            DB::table('password_reset_tokens')->where('email', $request->email)->delete();
+            return response()->json(['message' => 'Ce lien de réinitialisation a expiré. Veuillez en redemander un.'], 422);
+        }
+
+        $user = User::where('email', $request->email)->firstOrFail();
+        $user->update(['password' => Hash::make($request->password)]);
+
+        DB::table('password_reset_tokens')->where('email', $request->email)->delete();
+
+        return response()->json(['message' => 'Mot de passe réinitialisé avec succès. Vous pouvez vous connecter.']);
+    }
+
+    // POST /api/auth/verify-email — public.
+    public function verifyEmail(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email',
+            'token' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $record = DB::table('email_verifications')->where('email', $request->email)->first();
+
+        if (! $record || ! Hash::check($request->token, $record->token)) {
+            return response()->json(['message' => 'Ce lien de vérification est invalide.'], 422);
+        }
+
+        if (now()->diffInMinutes($record->created_at) > 60) {
+            DB::table('email_verifications')->where('email', $request->email)->delete();
+            return response()->json(['message' => 'Ce lien de vérification a expiré. Demandez-en un nouveau depuis votre compte.'], 422);
+        }
+
+        $user = User::where('email', $request->email)->firstOrFail();
+        $user->update(['email_verified_at' => now()]);
+
+        DB::table('email_verifications')->where('email', $request->email)->delete();
+
+        return response()->json(['message' => 'Adresse email vérifiée avec succès.']);
+    }
+
+    // POST /api/auth/resend-verification — the authenticated user requests a
+    // new verification email (e.g. the first one expired or was lost).
+    public function resendVerification()
+    {
+        $user = auth('api')->user();
+
+        if ($user->email_verified_at) {
+            return response()->json(['message' => 'Cet email est déjà vérifié.']);
+        }
+
+        $this->sendVerificationEmail($user);
+
+        return response()->json(['message' => 'Un nouvel email de vérification vient d\'être envoyé.']);
+    }
+
+    private function sendVerificationEmail(User $user): void
+    {
+        $token = Str::random(64);
+
+        DB::table('email_verifications')->updateOrInsert(
+            ['email' => $user->email],
+            ['token' => Hash::make($token), 'created_at' => now()]
+        );
+
+        $verifyUrl = rtrim(config('app.frontend_url'), '/')
+            . '/verify-email?token=' . $token . '&email=' . urlencode($user->email);
+
+        Mail::to($user->email)->send(new VerifyEmailMail($user->prenom, $verifyUrl));
     }
 
     private function respondWithToken($token)

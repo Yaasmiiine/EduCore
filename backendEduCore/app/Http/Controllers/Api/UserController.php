@@ -12,10 +12,31 @@ use Illuminate\Support\Facades\Validator;
 class UserController extends Controller
 {
     // GET /api/users
-    public function index()
+    // Paginated (and searchable/filterable) only when a `page` param is sent —
+    // other parts of the app (formateur/stagiaire dropdowns) rely on the full
+    // unpaginated list, so that behavior stays unchanged by default.
+    public function index(Request $request)
     {
-        $users = User::with('role', 'groupe')->get();
-        return response()->json($users);
+        $query = User::with('role', 'groupe');
+
+        if ($request->filled('search')) {
+            $search = $request->string('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('nom', 'like', "%{$search}%")
+                    ->orWhere('prenom', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('role')) {
+            $query->whereHas('role', fn ($q) => $q->where('nom', $request->string('role')));
+        }
+
+        if ($request->has('page')) {
+            return response()->json($query->paginate($request->integer('per_page', 10)));
+        }
+
+        return response()->json($query->get());
     }
 
     // POST /api/users
