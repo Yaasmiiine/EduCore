@@ -13,6 +13,9 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware) {
         // No custom Cors class needed — Laravel handles it via config/cors.php
+        // Trust the proxy in front of the app (Render, or any PaaS load balancer)
+        // so $request->ip()/isSecure() reflect the real client, not the proxy hop.
+        $middleware->trustProxies(at: '*');
         $middleware->alias([
             'role' => \App\Http\Middleware\RoleMiddleware::class,
         ]);

@@ -38,7 +38,23 @@ return [
             'report' => false,
         ],
 
-        'public' => [
+        // Every uploaded file (Fichier, Soumission) is written to and read back
+        // from this disk, but always served through an authenticated Laravel
+        // download route rather than a raw disk/bucket URL, so swapping the
+        // driver here is enough. Free compute hosts wipe local disk on every
+        // redeploy, so UPLOADS_DISK=s3 points production at an S3-compatible
+        // provider instead (Backblaze B2, Cloudflare R2, AWS S3, ...).
+        'public' => env('UPLOADS_DISK', 'local') === 's3' ? [
+            'driver' => 's3',
+            'key' => env('AWS_ACCESS_KEY_ID'),
+            'secret' => env('AWS_SECRET_ACCESS_KEY'),
+            'region' => env('AWS_DEFAULT_REGION', 'auto'),
+            'bucket' => env('AWS_BUCKET'),
+            'endpoint' => env('AWS_ENDPOINT'),
+            'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', true),
+            'throw' => false,
+            'report' => false,
+        ] : [
             'driver' => 'local',
             'root' => storage_path('app/public'),
             'url' => rtrim(env('APP_URL', 'http://localhost'), '/').'/storage',
